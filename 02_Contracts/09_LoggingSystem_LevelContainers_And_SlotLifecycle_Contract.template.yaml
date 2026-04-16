@@ -1,0 +1,67 @@
+contract:
+  contract_id: LOGSYS-C-009
+  contract_name: LoggingSystem_LevelContainers_And_SlotLifecycle_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze dedicated log-level containers and canonical slot lifecycle surfaces for specialized pipelines.
+
+container_topology:
+  dedicated_level_containers_required: true
+  partition_strategy:
+    allowed_values:
+      - by_level
+      - by_tenant
+      - hybrid
+    default: by_level
+  canonical_levels:
+    - DEBUG
+    - INFO
+    - WARN
+    - ERROR
+    - FATAL
+    - TRACE
+
+slot_lifecycle:
+  canonical_states:
+    - NEW
+    - WRITING
+    - READY
+    - DISPATCHING
+    - DISPATCHED
+    - FAILED
+    - EVICTED
+  transitions:
+    - NEW->WRITING
+    - WRITING->READY
+    - READY->DISPATCHING
+    - DISPATCHING->DISPATCHED
+    - DISPATCHING->FAILED
+    - READY->EVICTED
+    - FAILED->EVICTED
+  extended_substate_policy:
+    allowed: true
+    rule: non_canonical_substates_must_be_metadata_only_and_must_not_override_canonical_state_machine
+
+slot_surface_requirements:
+  required_slot_fields:
+    - slot_id
+    - container_id
+    - current_state
+    - envelope_ref
+    - created_at_utc
+    - updated_at_utc
+  required_container_fields:
+    - container_id
+    - level
+    - partition_key
+    - capacity_policy
+    - container_binding_id
+    - container_backend_profile_id
+    - container_lease_id
+
+fail_closed_conditions:
+  - missing_dedicated_level_container
+  - missing_canonical_slot_state
+  - invalid_state_transition
+  - canonical_state_machine_overridden_by_substate
+  - dispatch_without_valid_container_binding_and_lease

@@ -1,0 +1,55 @@
+contract:
+  contract_id: LOGSYS-C-008
+  contract_name: LoggingSystem_LoggerPreviewer_Profile_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze optional logger previewer subsystem profile with adapter-only integration boundaries.
+
+classification:
+  profile_type: optional_profile
+  source_ref: ./06_LoggingSystem_Component_Classification_And_SpecializedPipelines_Contract.template.yaml
+
+previewer_subsystem:
+  subsystem_id: LOGPREVIEW
+  integration_rule: consume_logging_output_via_provider_ports_and_adapters_only
+  direct_core_internal_access_forbidden: true
+  components:
+    - console_previewer_displayer
+    - console_previewer_formatter
+    - console_previewer_mode_controller
+    - web_previewer_displayer
+    - web_previewer_formatter
+    - web_previewer_mode_controller
+
+preview_modes:
+  supported_modes:
+    - pop_single
+    - collective
+    - system_pause
+  default_mode: collective
+
+adapter_profiles:
+  console_profile:
+    required_adapter_ports:
+      - preview_output_port
+      - preview_mode_port
+      - previewer_integration_port
+  web_profile:
+    required_adapter_ports:
+      - api_adapter_port
+      - websocket_adapter_port
+      - preview_mode_port
+      - previewer_integration_port
+
+external_composition:
+  supported_provider_systems:
+    - ObservabilityViewerSystem
+  specialization_pack_contract_ref:
+    - ./13_LoggingSystem_ObservabilityViewer_SpecializationPack_Contract.template.yaml
+  direct_external_renderer_sdk_usage_forbidden: true
+
+fail_closed_conditions:
+  - previewer_reads_core_internals_directly
+  - missing_previewer_output_binding
+  - missing_mode_controller_binding
+  - missing_previewer_integration_port_binding_for_external_provider

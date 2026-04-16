@@ -1,0 +1,107 @@
+contract:
+  contract_id: LOGSYS-C-018
+  contract_name: LoggingSystem_Connections_Catalog_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze connections catalog SSOT for connector/adapter profiles used by log container providers.
+
+catalog_model:
+  catalog_id: LOGSYS_CONNECTIONS_CATALOG
+  required_fields:
+    - connector_profile_id
+    - provider_id
+    - connector_type
+    - protocol
+    - auth_modes
+    - tls_modes
+    - retry_policy
+    - circuit_breaker_policy
+    - session_or_lease_requirements
+    - execution_plane_relation
+    - backend_execution_scope
+    - capabilities
+    - fail_closed_conditions
+  allowed_connector_types:
+    - local
+    - redis
+    - database
+    - network
+
+seed_entries:
+  - connector_profile_id: connector.local.memory
+    provider_id: provider.local.inmemory.level_containers
+    connector_type: local
+    protocol: inprocess_api
+    auth_modes:
+      - none
+    tls_modes:
+      - not_applicable
+    retry_policy:
+      mode: none
+      max_attempts: 0
+    circuit_breaker_policy:
+      enabled: false
+    session_or_lease_requirements:
+      lease_required: true
+      session_required: false
+    execution_plane_relation: orthogonal_explicit_binding
+    backend_execution_scope: connector_backend
+    capabilities:
+      - low_latency
+      - direct_inprocess_calls
+    fail_closed_conditions:
+      - lease_required_but_missing
+
+  - connector_profile_id: connector.redis.tcp_tls
+    provider_id: provider.redis.streams
+    connector_type: redis
+    protocol: redis_tcp
+    auth_modes:
+      - password
+      - acl
+    tls_modes:
+      - tls_optional
+      - tls_required
+    retry_policy:
+      mode: exponential_backoff
+      max_attempts: 8
+    circuit_breaker_policy:
+      enabled: true
+      failure_threshold: 5
+      reset_timeout_seconds: 30
+    session_or_lease_requirements:
+      lease_required: true
+      session_required: true
+      session_ttl_seconds: 3600
+    execution_plane_relation: orthogonal_explicit_binding
+    backend_execution_scope: connector_backend
+    capabilities:
+      - distributed_connectivity
+      - reconnect_support
+      - command_timeout_control
+    fail_closed_conditions:
+      - tls_required_but_not_configured
+      - auth_required_but_missing_credentials
+      - retry_policy_missing_for_distributed_connector
+
+catalog_rules:
+  connector_profile_provider_id_must_match_provider_catalog: true
+  protocol_auth_tls_compatibility_mandatory: true
+  retry_and_circuit_breaker_required_for_distributed_connectors: true
+  connector_execution_plane_must_remain_orthogonal: true
+
+runtime_module_boundary:
+  module_root: 03_DigitalTwin/logging_system/provider_catalogs
+  required_components:
+    - provider_catalogs/models.py
+    - provider_catalogs/service.py
+  separation_rules:
+    - connection_catalog_entries_must_be_managed_in_provider_catalogs_module
+    - direct_connection_catalog_mutation_outside_provider_catalogs_module_forbidden
+
+fail_closed_conditions:
+  - connector_profile_missing_required_field
+  - connector_type_not_allowed
+  - connector_profile_with_incompatible_protocol_auth_tls
+  - distributed_connector_without_resilience_profile
+  - connector_execution_plane_not_explicitly_bound

@@ -1,0 +1,75 @@
+contract:
+  contract_id: LOGSYS-C-023
+  contract_name: LoggingSystem_Threading_Scheduling_Backpressure_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze threading/scheduling/backpressure conformance surfaces and fail-closed gate for execution safety.
+
+depends_on:
+  - ./22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+
+threading_model:
+  allowed_thread_safety_modes:
+    - single_writer_per_partition
+    - thread_safe_locked
+    - lock_free_cas
+  allowed_queue_models:
+    - bounded_fifo
+    - bounded_priority
+  allowed_backpressure_actions:
+    - block
+    - drop_oldest
+    - drop_newest
+    - sample
+    - retry_with_jitter
+  required_queue_bounds:
+    max_items_required: true
+    max_items_must_be_positive: true
+  required_safepoint_rules:
+    - writes_commit_only_at_declared_safepoints
+    - out_of_round_write_forbidden
+    - stale_epoch_commit_forbidden
+
+scheduling_model:
+  allowed_scheduling_policy_kinds:
+    - fixed_priority
+    - weighted_fair
+    - fifo
+  mandatory_fields_by_kind:
+    fixed_priority:
+      - priority_bands
+    weighted_fair:
+      - queue_weights
+    fifo: []
+
+conformance_rules:
+  queue_must_be_bounded: true
+  thread_safety_mode_must_be_declared: true
+  backpressure_policy_action_must_be_allowed: true
+  severity_overrides_if_declared_must_be_allowed_actions: true
+  cross_thread_mutation_without_declared_mode_forbidden: true
+
+validator_gate:
+  gate_id: LOGSYS-VAL-002
+  validator_script: ../00_Project_Management/automation/validate_threading_conformance_gate.py
+  report_output: ../00_Project_Management/06_LOGSYS_VAL_Threading_Conformance_Report.json
+  mode: fail_closed
+  required_checks:
+    - provider_execution_profile_reference_resolves
+    - execution_profile_thread_safety_mode_allowed
+    - execution_profile_queue_model_allowed
+    - execution_profile_queue_bounds_present_and_valid
+    - backpressure_action_allowed
+    - execution_plane_relation_is_orthogonal_explicit_binding
+    - lease_required_provider_has_lease_required_profile
+  non_zero_exit_code_blocks_progression: true
+
+fail_closed_conditions:
+  - missing_thread_safety_mode
+  - missing_queue_model
+  - unbounded_or_invalid_queue_bounds
+  - unsupported_backpressure_action
+  - provider_missing_execution_profile_reference
+  - execution_plane_not_orthogonal
+  - lease_required_mismatch

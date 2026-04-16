@@ -1,0 +1,56 @@
+// Layer 1: Models Class Diagram
+// Graphviz DOT format
+
+digraph L1_Models {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10];
+    
+    // LogRecord
+    LogRecord [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#E3F2FD"><B>LogRecord</B> @dataclass(frozen=True)</TD></TR>
+            <TR><TD>+record_id: str</TD><TD>Unique identifier</TD></TR>
+            <TR><TD>+payload: Mapping</TD><TD>Log data</TD></TR>
+            <TR><TD>+created_at_utc: str</TD><TD>Creation timestamp</TD></TR>
+            <TR><TD>+dispatched_at_utc: str | None</TD><TD>Dispatch timestamp</TD></TR>
+            <TR><TD>+adapter_key: str | None</TD><TD>Target adapter</TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#E8F5E9">+to_projection(): dict</TD></TR>
+            <TR><TD COLSPAN="2" BGCOLOR="#E8F5E9">+matches(filters): bool</TD></TR>
+        </TABLE>
+    >];
+    
+    // LogEnvelope
+    LogEnvelope [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" BGCOLOR="#FFF3E0"><B>LogEnvelope&lt;TContent, TContext, TMeta&gt;</B><br/>@dataclass(frozen=True)</TD></TR>
+            <TR><TD>+content: TContent</TD><TD>The log message/data</TD></TR>
+            <TR><TD>+context: TContext</TD><TD>Runtime context</TD></TR>
+            <TR><TD>+metadata: TMeta</TD><TD>Metadata</TD></TR>
+            <TR><TD>+created_at_utc: str</TD><TD>Creation timestamp</TD></TR>
+        </TABLE>
+    >];
+    
+    // utc_now_iso
+    utc_now_iso [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#E8F5E9"><B>utc_now_iso</B></TD></TR>
+            <TR><TD>+__call__(): str</TD></TR>
+        </TABLE>
+    >];
+    
+    // SchemaCatalog
+    SchemaCatalog [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#FCE4EC"><B>SchemaCatalog</B></TD></TR>
+            <TR><TD>+DEFAULT_CONTENT_SCHEMA_ID</TD></TR>
+            <TR><TD>+ERROR_CONTENT_SCHEMA_ID</TD></TR>
+            <TR><TD>+AUDIT_CONTENT_SCHEMA_ID</TD></TR>
+            <TR><TD>+build_default_content_schema_catalog()</TD></TR>
+        </TABLE>
+    >];
+    
+    // Relationships
+    LogRecord -> utc_now_iso [label="uses", style=dashed];
+    LogEnvelope -> utc_now_iso [label="uses", style=dashed];
+}

@@ -1,0 +1,152 @@
+target:
+  system_id: LOGSYS
+  project_root: 03.0020_LoggingSystem
+  runtime_scope_prefix: 03_DigitalTwin/logging_system
+
+sources:
+  digital_twin_mapping_doc: 01_Architecture/00_LoggingSystem_ArchitectureDigitalTwin_FileSystem.md
+  inventory_doc: 00_Project_Management/02_LoggingSystem_Implementation_Inventory_SSOT.md
+  strict_plan_doc: 00_Project_Management/01_Strict_Dependency_Execution_Plan_LoggingSystem.md
+
+checks:
+  structural_completion:
+    enabled: true
+    enforce_representation_mode: true
+    enforce_folder_and_file_anchors: true
+
+  contract_surface_completion:
+    enabled: true
+    required_contract_files:
+      - 02_Contracts/00_LoggingSystem_Schema_Contract.template.yaml
+      - 02_Contracts/02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+      - 02_Contracts/12_LoggingSystem_CLI_Command_Surface_Contract.template.yaml
+      - 02_Contracts/14_LoggingSystem_Configuration_Surface_Contract.template.yaml
+      - 02_Contracts/17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+      - 02_Contracts/18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+      - 02_Contracts/19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+      - 02_Contracts/20_LoggingSystem_ClientSide_Ports_Adapters_Injection_Contract.template.yaml
+      - 02_Contracts/21_LoggingSystem_Catalog_Integrity_Validator_Gate_Contract.template.yaml
+      - 02_Contracts/22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+      - 02_Contracts/23_LoggingSystem_Threading_Scheduling_Backpressure_Contract.template.yaml
+      - 02_Contracts/24_LoggingSystem_Production_Profile_Catalog_Contract.template.yaml
+      - 02_Contracts/25_LoggingSystem_ProviderCatalog_ProfileBinding_Contract.template.yaml
+    port_to_service_mappings:
+      - port_file: 03_DigitalTwin/logging_system/ports/administrative_port.py
+        port_class: AdministrativePort
+        service_file: 03_DigitalTwin/logging_system/services/logging_service.py
+        service_class: LoggingService
+      - port_file: 03_DigitalTwin/logging_system/ports/managerial_port.py
+        port_class: ManagerialPort
+        service_file: 03_DigitalTwin/logging_system/services/logging_service.py
+        service_class: LoggingService
+      - port_file: 03_DigitalTwin/logging_system/ports/consuming_port.py
+        port_class: ConsumingPort
+        service_file: 03_DigitalTwin/logging_system/services/logging_service.py
+        service_class: LoggingService
+    cli_surface_checks:
+      - contract_file: 02_Contracts/12_LoggingSystem_CLI_Command_Surface_Contract.template.yaml
+        parser_file: 03_DigitalTwin/logging_system/cli/parser.py
+        contract_command_paths:
+          - cli_command_groups.baseline
+          - cli_command_groups.schema_catalog_crud
+          - cli_command_groups.policy_crud
+          - cli_command_groups.runtime_profile_crud
+          - cli_command_groups.production_profile_crud
+          - cli_command_groups.typed_configuration_crud
+          - cli_command_groups.previewer_commands
+          - cli_command_groups.dedicated_loglevel_entrypoints
+
+  cross_reference_integrity:
+    enabled: true
+    check_commands:
+      - python 03.0020_LoggingSystem/00_Project_Management/automation/validate_catalog_integrity_gate.py
+      - python 03.0020_LoggingSystem/00_Project_Management/automation/validate_threading_conformance_gate.py
+
+  behavioral_completion:
+    enabled: true
+    required_test_files:
+      - 03_DigitalTwin/logging_system/tests/test_end_to_end_behavior.py
+      - 03_DigitalTwin/logging_system/tests/test_provider_catalogs_behavior.py
+      - 03_DigitalTwin/logging_system/tests/test_thread_pool_resource_management_behavior.py
+      - 03_DigitalTwin/logging_system/tests/test_production_profiles_behavior.py
+    test_commands:
+      - python -m pytest 03.0020_LoggingSystem/03_DigitalTwin/logging_system/tests -q
+
+  evidence_completion:
+    enabled: true
+    required_evidence_files:
+      - 03.0020_LoggingSystem/00_Project_Management/02_LoggingSystem_Implementation_Inventory_SSOT.md
+      - 03.0020_LoggingSystem/00_Project_Management/05_LOGSYS_VAL_Catalog_Integrity_Report.json
+      - 03.0020_LoggingSystem/00_Project_Management/06_LOGSYS_VAL_Threading_Conformance_Report.json
+      - 03.0020_LoggingSystem/00_Project_Management/07_LoggingSystem_Missing_Codebase_Content_Matrix.md
+
+  drift_detection:
+    enabled: true
+    fail_on_implemented_missing: true
+    fail_on_planned_but_exists: false
+
+  quality_baseline:
+    enabled: true
+    quality_commands:
+      - python -m pytest 03.0020_LoggingSystem/03_DigitalTwin/logging_system/tests -q
+
+  scoring_model:
+    enabled: true
+    advisory_only: true
+    pass_threshold: 85
+    weights:
+      structural_completion: 30
+      contract_surface_completion: 25
+      cross_reference_integrity: 20
+      behavioral_completion: 20
+      evidence_completion: 5
+
+codebase_symbol_expectations:
+  - file: 03_DigitalTwin/logging_system/provider_catalogs/models.py
+    required_symbols:
+      - class:ProviderCatalogEntry
+      - class:ConnectionCatalogEntry
+      - class:PersistenceCatalogEntry
+      - function:_require_non_empty_str
+      - function:_require_non_empty_str_list
+    fail_on_missing_symbol: true
+  - file: 03_DigitalTwin/logging_system/provider_catalogs/service.py
+    required_symbols:
+      - class:ProviderCatalogService
+      - method:ProviderCatalogService.create_provider_entry
+      - method:ProviderCatalogService.create_connection_entry
+      - method:ProviderCatalogService.create_persistence_entry
+      - method:ProviderCatalogService.validate_integrity
+      - method:ProviderCatalogService.export_state
+      - method:ProviderCatalogService.import_state
+    fail_on_missing_symbol: true
+  - file: 03_DigitalTwin/logging_system/services/logging_service.py
+    required_symbols:
+      - class:LoggingService
+      - const:ALLOWED_THREAD_SAFETY_MODES
+      - const:ALLOWED_BACKPRESSURE_ACTIONS
+      - method:LoggingService.create_provider_catalog_entry
+      - method:LoggingService.create_connection_catalog_entry
+      - method:LoggingService.create_persistence_catalog_entry
+      - method:LoggingService.validate_provider_catalog_integrity
+      - method:LoggingService.create_production_profile
+      - method:LoggingService.activate_production_profile
+      - method:LoggingService.validate_production_profile_integrity
+      - method:LoggingService.bind_execution_assignment
+      - method:LoggingService.enforce_safepoint
+    fail_on_missing_symbol: true
+  - file: 03_DigitalTwin/logging_system/production_profiles/service.py
+    required_symbols:
+      - class:ProductionProfileCatalogService
+      - method:ProductionProfileCatalogService.create_profile
+      - method:ProductionProfileCatalogService.validate_integrity
+    fail_on_missing_symbol: true
+  - file: 03_DigitalTwin/logging_system/cli/parser.py
+    required_symbols:
+      - function:build_parser
+      - function:_add_log_payload_args
+    fail_on_missing_symbol: true
+
+report:
+  output_path: 03.0020_LoggingSystem/00_Project_Management/10_LOGSYS_VAL_Completion_Gate_Report.json
+  include_dependency_ordered_matrix: true

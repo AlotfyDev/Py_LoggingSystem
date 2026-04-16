@@ -1,0 +1,41 @@
+%% Threading Model
+%% Mermaid format
+
+flowchart LR
+    subgraph "Thread Safety Modes"
+        SW[single_writer_per_partition]
+        TSL[thread_safe_locked]
+        LFC[lock_free_cas]
+    end
+    
+    subgraph "Characteristics"
+        C1[Default Mode<br/>Optimized for single-writer]
+        C2[Full RLock<br/>All operations synchronized]
+        C3[Compare-and-Swap<br/>Lock-free operations]
+    end
+    
+    subgraph "Use Cases"
+        U1[High throughput<br/>Single-threaded producers]
+        U2[Multi-threaded<br/>Safety priority]
+        U3[Maximum throughput<br/>Low contention]
+    end
+    
+    subgraph "Backpressure Actions"
+        BP1[block]
+        BP2[drop_oldest]
+        BP3[drop_newest]
+        BP4[sample]
+        BP5[retry_with_jitter]
+    end
+    
+    SW --> C1
+    TSL --> C2
+    LFC --> C3
+    
+    C1 --> U1
+    C2 --> U2
+    C3 --> U3
+    
+    style SW fill:#C8E6C9
+    style TSL fill:#FFF9C4
+    style LFC fill:#FFCDD2

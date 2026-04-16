@@ -1,0 +1,90 @@
+contract:
+  contract_id: LOGSYS-C-004
+  contract_name: LoggingSystem_ArchitectureDigitalTwin_Filesystem_Contract
+  version: 1.1.0
+  status: active
+  owner_scope: subsystem
+  owner_entity: <logging_system_owner>
+  intent: Freeze architecture-to-filesystem digital twin mapping for per-object modular runtime implementation.
+
+source_document:
+  architecture_ref: ../01_Architecture/00_LoggingSystem_ArchitectureDigitalTwin_FileSystem.md
+
+target_artifact_pattern:
+  artifact_type: ArchitectureDigitalTwinFileSystem
+  allowed_paths:
+    - ../01_Architecture/*ArchitectureDigitalTwin*FileSystem*.md
+
+required_sections:
+  - Purpose
+  - Scope
+  - Canonical Mapping Rule
+  - Representation Granularity Policy
+  - Modularity and Separation-of-Concerns Policy
+  - Initial Twin Mapping
+  - Layered ASCII Twin Trees
+  - Representation Mode to Tree Semantics
+  - Canonical Internal Module Map
+  - Conformance Rules
+  - Change Control
+
+required_mapping_columns:
+  - Architecture Component
+  - Type
+  - Canonical Repo Path
+  - Representation Mode
+  - Canonical File Anchors
+  - Status
+
+representation_mode_model:
+  allowed_values: [folder_only, file_only, folder_and_file]
+  defaults:
+    subsystem: folder_only
+    module: folder_only
+    contract_critical_component: folder_and_file
+    leaf_utility: file_only
+
+semantic_rules:
+  - id: LOGSYS-DT-R001
+    rule: "Runtime package concerns must be represented under 03_DigitalTwin/<package>/ with per-object files for models, ports, adapters, services, and cli."
+  - id: LOGSYS-DT-R002
+    rule: "Contract templates map under 02_Contracts and runtime implementation maps under 03_DigitalTwin/<package>/<concern>/... with no 03_Runtime layer."
+  - id: LOGSYS-DT-R003
+    rule: "Representation mode folder_and_file requires non-empty canonical file anchors."
+  - id: LOGSYS-DT-R004
+    rule: "Port contracts must be split per object file; aggregate ports.py style is non-canonical for architecture twin mapping."
+  - id: LOGSYS-DT-R005
+    rule: "Every mapping row must be represented in Layered ASCII Twin Trees with representation-mode semantics."
+  - id: LOGSYS-DT-R006
+    rule: "Layered ASCII Twin Trees must include multiple layers (contracts, runtime package, and port object layer)."
+  - id: LOGSYS-DT-R007
+    rule: "Legacy runtime roots 03_Runtime and DigitalTwin are forbidden in canonical runtime mapping."
+
+contextual_system_types:
+  system_type_axis:
+    required: true
+    allowed_values:
+      - Subsystem
+      - Module
+      - Component
+      - Interface
+      - Adapter
+      - Contract
+      - Policy
+
+conformance_verdict:
+  pass_when: required_sections_present_and_semantic_rules_satisfied
+  fail_when: missing_required_sections_or_semantic_violations
+
+fail_closed_conditions:
+  - missing_required_sections
+  - missing_required_mapping_columns
+  - missing_representation_mode
+  - folder_and_file_missing_anchor
+  - unresolved_canonical_repo_path
+  - missing_module_soc_boundary
+  - missing_cli_module_mapping
+  - missing_digitaltwin_hierarchy_mapping
+  - forbidden_legacy_runtime_layer
+  - representation_mode_tree_mismatch
+  - missing_layered_ascii_twin_tree

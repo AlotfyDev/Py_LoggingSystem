@@ -1,0 +1,93 @@
+%% CLI Architecture
+%% Mermaid format
+
+graph TB
+    subgraph "CLI Entry"
+        CLI[run_cli.py]
+    end
+    
+    subgraph "Parser Layer"
+        P[build_parser<br/>parser.py]
+        JP[parse_json_object<br/>json_payload_parser.py]
+    end
+    
+    subgraph "Status Commands"
+        ST[status]
+        LA[list-adapters]
+        EV[evidence]
+    end
+    
+    subgraph "Logging Commands"
+        EM[emit]
+        LD[log-debug]
+        LI[log-info]
+        LW[log-warn]
+        LE[log-error]
+        LF[log-fatal]
+        LT[log-trace]
+    end
+    
+    subgraph "Binding Commands"
+        BA[bind-adapter]
+        BCA[bind-container-assignment]
+        BEA[bind-execution-assignment]
+    end
+    
+    subgraph "Schema Commands"
+        SL[schema-list]
+        SG[schema-get]
+        SC[schema-create]
+    end
+    
+    subgraph "Production Profile Commands"
+        PPA[production-profile-activate]
+    end
+    
+    subgraph "Dispatch Commands"
+        DP[dispatch]
+        SP[safepoint]
+    end
+    
+    CLI --> P
+    P --> JP
+    P --> ST
+    P --> LA
+    P --> EV
+    P --> EM
+    P --> LD
+    P --> LI
+    P --> LW
+    P --> LE
+    P --> LF
+    P --> LT
+    P --> BA
+    P --> BCA
+    P --> BEA
+    P --> SL
+    P --> SG
+    P --> SC
+    P --> PPA
+    P --> DP
+    P --> SP
+    
+    ST --> LS[LoggingService]
+    LA --> LS
+    EV --> LS
+    EM --> LS
+    LD --> LS
+    LI --> LS
+    LW --> LS
+    LE --> LS
+    LF --> LS
+    LT --> LS
+    BA --> LS
+    BCA --> LS
+    BEA --> LS
+    SL --> LS
+    SG --> LS
+    SC --> LS
+    PPA --> LS
+    DP --> LS
+    SP --> LS
+    
+    style LS fill:#C8E6C9

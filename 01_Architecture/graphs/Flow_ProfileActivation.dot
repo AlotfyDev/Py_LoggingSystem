@@ -1,0 +1,48 @@
+// Flow: Profile Activation Sequence
+// Graphviz DOT format
+
+digraph Flow_ProfileActivation {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // Participants
+    U [label="User", shape=ellipse, style=filled, fillcolor="#E3F2FD"];
+    LS [label="LoggingService", shape=ellipse, style=filled, fillcolor="#E8F5E9"];
+    PP [label="ProductionProfileCatalog", shape=ellipse, style=filled, fillcolor="#FCE4EC"];
+    PC [label="ProviderCatalogService", shape=ellipse, style=filled, fillcolor="#FFF3E0"];
+    
+    // Sequence
+    U -> LS [label="activate_production_profile(profile_id)"];
+    
+    LS -> PP [label="get_profile(profile_id)"];
+    PP -> LS [label="profile"];
+    
+    LS -> PP [label="validate_integrity()", style=dashed];
+    PP -> LS [label="valid / invalid", style=dashed];
+    
+    LS -> LS [label="extract:\n- container_binding_id\n- execution_binding_id\n- adapter_key", style=dashed, color="#7B1FA2"];
+    
+    LS -> LS [label="bind_container_assignment()", color="#388E3C"];
+    LS -> LS [label="bind_execution_assignment()", color="#388E3C"];
+    LS -> LS [label="bind_adapter(adapter_key)", color="#388E3C"];
+    
+    LS -> PC [label="validate_provider_catalog_integrity()", style=dashed];
+    PC -> LS [label="integrity status", style=dashed];
+    
+    LS -> LS [label="_active_production_profile_id = profile_id"];
+    LS -> U [label="{profile_id, container_assignment,\n execution_assignment, adapter_key}"];
+    
+    // Phase boxes
+    subgraph cluster_validate {
+        label="Phase 1: Validate Profile";
+        style=filled;
+        color="#FFECB3";
+    }
+    
+    subgraph cluster_bind {
+        label="Phase 2: Apply Bindings";
+        style=filled;
+        color="#C8E6C9";
+    }
+}

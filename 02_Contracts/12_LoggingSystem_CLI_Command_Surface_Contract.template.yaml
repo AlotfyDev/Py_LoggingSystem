@@ -1,0 +1,103 @@
+contract:
+  contract_id: LOGSYS-C-012
+  contract_name: LoggingSystem_CLI_Command_Surface_Contract
+  version: 1.3.0
+  status: active
+  intent: Freeze CLI command surface synchronized with specialized pipelines, typed configurator, and production-profile governance.
+
+depends_on:
+  - ./08_LoggingSystem_LoggerPreviewer_Profile_Contract.template.yaml
+  - ./09_LoggingSystem_LevelContainers_And_SlotLifecycle_Contract.template.yaml
+  - ./10_LoggingSystem_Specialized_Resolver_Pipelines_Contract.template.yaml
+  - ./11_LoggingSystem_Dedicated_LogLevel_API_Objects_Contract.template.yaml
+  - ./14_LoggingSystem_Configuration_Surface_Contract.template.yaml
+  - ./24_LoggingSystem_Production_Profile_Catalog_Contract.template.yaml
+
+cli_command_groups:
+  baseline:
+    - status
+    - list-adapters
+    - evidence
+    - query
+    - emit
+    - bind-adapter
+    - bind-container-assignment
+    - unbind-container-assignment
+    - container-assignment-status
+    - bind-execution-assignment
+    - unbind-execution-assignment
+    - execution-assignment-status
+    - dispatch
+    - safepoint
+  schema_catalog_crud:
+    - schema-list
+    - schema-get
+    - schema-create
+    - schema-update
+    - schema-delete
+  policy_crud:
+    - policy-list
+    - policy-get
+    - policy-create
+    - policy-update
+    - policy-delete
+  runtime_profile_crud:
+    - profile-list
+    - profile-get
+    - profile-create
+    - profile-update
+    - profile-delete
+  production_profile_crud:
+    - production-profile-list
+    - production-profile-get
+    - production-profile-create
+    - production-profile-update
+    - production-profile-delete
+    - production-profile-activate
+  specialized_component_policies:
+    - set-dispatch-failure-policy
+    - set-signal-qos-profile
+    - set-mandatory-label-schema
+    - set-slot-lifecycle-policy
+    - set-level-container-policy
+    - set-resolver-pipeline-policy
+    - set-previewer-profile
+    - set-loglevel-api-policy
+  typed_configuration_crud:
+    - config-list
+    - config-get
+    - config-create
+    - config-update
+    - config-delete
+    - config-apply
+  previewer_commands:
+    - preview-console
+    - preview-web
+  dedicated_loglevel_entrypoints:
+    - log-debug
+    - log-info
+    - log-warn
+    - log-error
+    - log-fatal
+    - log-trace
+
+payload_rules:
+  json_argument_flags_must_be_object_payloads:
+    - --attributes-json
+    - --context-json
+    - --schema-json
+    - --policy-json
+    - --profile-json
+    - --config-json
+  emit_level_rule:
+    - emit_requires_valid_level_enum
+    - loglevel_commands_must_map_to_single_fixed_level
+
+fail_closed_conditions:
+  - missing_required_cli_command_group
+  - command_payload_not_json_object
+  - unknown_loglevel_in_emit_or_loglevel_command
+  - specialized_policy_command_not_wired_to_policy_registry
+  - typed_configuration_payload_missing_config_version
+  - dispatch_without_valid_container_assignment_or_lease
+  - production_profile_activate_without_resolved_catalog_refs

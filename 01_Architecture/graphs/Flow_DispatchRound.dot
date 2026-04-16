@@ -1,0 +1,62 @@
+// Flow: Dispatch Round Sequence
+// Graphviz DOT format
+
+digraph Flow_DispatchRound {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // Participants
+    LS [label="LoggingService", shape=ellipse, style=filled, fillcolor="#E8F5E9"];
+    DRP [label="DispatcherResolverPipeline", shape=ellipse, style=filled, fillcolor="#FCE4EC"];
+    LCMS [label="LogContainerModuleService", shape=ellipse, style=filled, fillcolor="#E1F5FE"];
+    AR [label="AdapterRegistry", shape=ellipse, style=filled, fillcolor="#F3E5F5"];
+    AD [label="Adapter", shape=ellipse, style=filled, fillcolor="#FFCCBC"];
+    
+    // Sequence
+    LS -> LS [label="dispatch_round(round_id)"];
+    
+    LS -> LCMS [label="drain_pending()"];
+    LCMS -> LS [label="pending_records"];
+    
+    LS -> DRP [label="resolve_dispatch_candidate(round_id, count)"];
+    DRP -> LS [label="dispatch_ready=true"];
+    
+    LS -> DRP [label="resolve_dispatch_receiver_binding(adapter_key)"];
+    
+    LS -> AR [label="resolve(active_adapter_key)"];
+    AR -> LS [label="adapter"];
+    
+    LS -> AD [label="emit_signal(record) [for each]"];
+    
+    LS -> LCMS [label="commit_dispatched(records)"];
+    
+    LCMS -> LCMS [label="notify_listeners()", style=dashed];
+    
+    LS -> LS [label="_total_dispatched += count"];
+    
+    // Phase boxes
+    subgraph cluster_drain {
+        label="Phase 1: Drain Pending";
+        style=filled;
+        color="#B3E5FC";
+    }
+    
+    subgraph cluster_resolve {
+        label="Phase 2: Resolve Dispatch";
+        style=filled;
+        color="#FFECB3";
+    }
+    
+    subgraph cluster_execute {
+        label="Phase 3: Execute Dispatch";
+        style=filled;
+        color="#C8E6C9";
+    }
+    
+    subgraph cluster_commit {
+        label="Phase 4: Commit Dispatched";
+        style=filled;
+        color="#E1BEE7";
+    }
+}

@@ -1,0 +1,39 @@
+%% Flow: Dispatch Round Sequence
+%% Mermaid format
+
+sequenceDiagram
+    participant LS as LoggingService
+    participant DRP as DispatcherResolverPipeline
+    participant LCMS as LogContainerModuleService
+    participant AR as AdapterRegistry
+    participant AD as Adapter
+    
+    LS->>LS: dispatch_round(round_id)
+    
+    rect rgb(232, 245, 233)
+        Note over LS: Drain Pending
+        LS->>LCMS: drain_pending()
+        LCMS-->>LS: pending_records
+    end
+    
+    rect rgb(255, 250, 240)
+        Note over LS: Resolve Dispatch
+        LS->>DRP: resolve_dispatch_candidate(round_id, pending_count)
+        DRP-->>LS: dispatch_ready=true
+        LS->>DRP: resolve_dispatch_receiver_binding(adapter_key)
+    end
+    
+    rect rgb(240, 248, 255)
+        Note over LS: Execute Dispatch
+        loop for each record
+            LS->>AR: resolve(active_adapter_key)
+            AR-->>LS: adapter
+            LS->>AD: emit_signal(record)
+        end
+    end
+    
+    rect rgb(255, 243, 224)
+        Note over LS: Commit Dispatched
+        LS->>LCMS: commit_dispatched(records)
+        LCMS->>LCMS: notify_listeners()
+    end

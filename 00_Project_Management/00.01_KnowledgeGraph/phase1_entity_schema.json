@@ -1,0 +1,41 @@
+{
+  "taxonomy_name": "LoggingSystem",
+  "version": "1.0",
+  "generated_at": "2026-04-15",
+  "phase": 1,
+  "source": "graphify_ast + entity_schema_layer",
+  "system": {
+    "name": "LoggingSystem",
+    "path": "03.0020_LoggingSystem",
+    "subsystem_path": "03_DigitalTwin/logging_system",
+    "excluded_paths": ["*_Obsolete*", "*_ToBeDeleted*", "*__pycache__*", "*test*"]
+  },
+  "vocabulary": {
+    "entity_types": ["CLASS", "PROTOCOL", "ENUM", "DATACLASS", "FUNCTION", "TYPEDEF"],
+    "categories": {
+      "SERVICE": {"description": "Business logic orchestrator", "heuristics": ["Service", "CLI"]},
+      "PORT": {"description": "Interface contract", "heuristics": ["Port", "Protocol"]},
+      "ADAPTER": {"description": "Port implementation", "heuristics": ["Adapter"]},
+      "MODEL": {"description": "Data transfer object", "heuristics": ["Record", "Envelope", "DTO", "Catalog"]},
+      "RESOLVER": {"description": "Pipeline resolution", "heuristics": ["Resolver", "Pipeline"]},
+      "CONTAINER": {"description": "Partitioned storage", "heuristics": ["Container", "Level"]},
+      "HANDLER": {"description": "Request handler", "heuristics": ["Handler"]},
+      "PREVIEW": {"description": "Output formatter", "heuristics": ["Preview", "Renderer"]},
+      "CATALOG": {"description": "Configuration registry", "heuristics": ["Catalog", "Entry"]},
+      "VALIDATOR": {"description": "Input validation", "heuristics": ["Validator", "Validation"]},
+      "FACTORY": {"description": "Object creation", "heuristics": ["Factory", "build_default", "build_pack"]},
+      "SPECIALIZATION": {"description": "System extension", "heuristics": ["Specialization"]},
+      "ENUM": {"description": "Enumerated values", "heuristics": ["E_Log", "E_", "LogLevel"]},
+      "DTO": {"description": "Data transfer object", "heuristics": ["DTO"]},
+      "TEST": {"description": "Test class", "heuristics": ["Test", "Tests"]}
+    }
+  },
+  "entities": [],
+  "relationships": [],
+  "statistics": {
+    "total_entities": 0,
+    "by_type": {},
+    "by_category": {},
+    "by_module": {}
+  }
+}

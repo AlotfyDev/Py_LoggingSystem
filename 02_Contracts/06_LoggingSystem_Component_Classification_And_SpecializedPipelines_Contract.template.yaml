@@ -1,0 +1,62 @@
+contract:
+  contract_id: LOGSYS-C-006
+  contract_name: LoggingSystem_Component_Classification_And_SpecializedPipelines_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze mandatory-core versus optional-profile classification and specialized pipeline architecture decisions.
+
+source_of_truth:
+  matrix_ref: ../00_Project_Management/03_LoggingSystem_MandatoryCore_vs_OptionalProfile_Matrix.md
+  strict_plan_task_id: LOGSYS-006
+
+component_classification:
+  mandatory_core:
+    - log_envelope_with_ids_and_correlation_fields
+    - content_schema_catalog_with_emit_time_validation
+    - level_partitioned_log_containers
+    - slot_lifecycle_canonical_state_model
+    - listener_notification_isolation
+    - receivers_registry_and_dispatcher_with_retry_ack
+    - writer_resolver_pipeline
+    - dispatcher_resolver_pipeline
+    - readonly_resolver_pipeline
+    - templated_log_level_handler_core
+    - dedicated_log_level_api_objects
+    - e_log_level_enum
+    - metadata_policy_surface_with_retention_and_redaction
+    - log_container_module_with_injected_provider_port
+    - resource_management_client_for_container_lease_validation
+  optional_profile:
+    - logger_previewer_subsystem
+    - console_previewer_displayer_formatter_mode_controller
+    - web_previewer_api_websocket_adapter_profile
+    - preview_modes_pop_single_collective_system_pause
+
+specialized_pipeline_policy:
+  logger_api_policy:
+    require_generic_log_entrypoint: false
+    require_dedicated_level_entrypoints: true
+  resolver_policy:
+    shared_reference_index_service_required: false
+    dedicated_role_resolver_pipelines_required: true
+  level_container_policy:
+    dedicated_level_containers_required: true
+
+slot_lifecycle_policy:
+  canonical_states:
+    - NEW
+    - WRITING
+    - READY
+    - DISPATCHING
+    - DISPATCHED
+    - FAILED
+    - EVICTED
+  extended_substate_rule: allowed_only_as_non_canonical_profile_metadata
+
+fail_closed_conditions:
+  - missing_classification_for_declared_component
+  - mandatory_core_component_misclassified_as_optional
+  - generic_log_entrypoint_declared_as_mandatory
+  - shared_reference_index_service_declared_as_required
+  - missing_canonical_slot_lifecycle_states
+  - logging_service_direct_container_store_mutation_without_provider_port

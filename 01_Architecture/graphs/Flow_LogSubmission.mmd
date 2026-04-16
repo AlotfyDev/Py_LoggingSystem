@@ -1,0 +1,40 @@
+%% Flow: Log Submission Sequence
+%% Mermaid format
+
+sequenceDiagram
+    participant U as User/API
+    participant LS as LoggingService
+    participant LLH as LogLevelHandler
+    participant LC as LevelContainers
+    participant WRP as WriterResolverPipeline
+    participant AR as AdapterRegistry
+    participant LCMS as LogContainerModuleService
+    participant AD as Adapter
+    
+    U->>LS: log_info("message", attributes, context)
+    LS->>LLH: emit(level, message, attributes, context)
+    
+    rect rgb(240, 248, 255)
+        Note over LLH: Normalize Envelope
+        LLH->>LLH: normalize_envelope(level, message)
+    end
+    
+    rect rgb(255, 250, 240)
+        Note over LLH: Schema Validation
+        LLH->>LLH: apply_schema_validation(payload, context)
+    end
+    
+    LLH->>LS: emit_callable(payload, context)
+    
+    rect rgb(232, 245, 233)
+        Note over LS: Create LogRecord
+        LS->>LCMS: enqueue_pending(record)
+        LCMS->>LC: add_record(level, record_id, context)
+    end
+    
+    LLH->>LC: route_to_level_container(level, record_id)
+    LLH->>WRP: publish_dispatch_event(level, record_id)
+    
+    LS->>AR: resolve(active_adapter_key)
+    AR-->>LS: adapter
+    LS->>AD: emit_signal(record)

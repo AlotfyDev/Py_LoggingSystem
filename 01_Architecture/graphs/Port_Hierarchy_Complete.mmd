@@ -1,0 +1,156 @@
+%% Port Hierarchy Complete
+%% Mermaid format
+
+classDiagram
+    class AdministrativePort {
+        <<protocol>>
+        +register_schema()
+        +create_schema()
+        +get_schema()
+        +update_schema()
+        +delete_schema()
+        +list_schema_ids()
+        +register_policy()
+        +create_policy()
+        +get_policy()
+        +update_policy()
+        +delete_policy()
+        +list_policy_ids()
+        +approve_runtime_profile()
+        +create_runtime_profile()
+        +get_runtime_profile()
+        +update_runtime_profile()
+        +delete_runtime_profile()
+        +list_runtime_profile_ids()
+        +create_production_profile()
+        +get_production_profile()
+        +update_production_profile()
+        +delete_production_profile()
+        +list_production_profile_ids()
+        +validate_production_profile_integrity()
+        +activate_production_profile()
+        +create_provider_catalog_entry()
+        +get_provider_catalog_entry()
+        +update_provider_catalog_entry()
+        +delete_provider_catalog_entry()
+        +list_provider_catalog_entries()
+        +create_connection_catalog_entry()
+        +get_connection_catalog_entry()
+        +update_connection_catalog_entry()
+        +delete_connection_catalog_entry()
+        +list_connection_catalog_entries()
+        +create_persistence_catalog_entry()
+        +get_persistence_catalog_entry()
+        +update_persistence_catalog_entry()
+        +delete_persistence_catalog_entry()
+        +list_persistence_catalog_entries()
+        +validate_provider_catalog_integrity()
+        +create_configuration()
+        +get_configuration()
+        +update_configuration()
+        +delete_configuration()
+        +list_configuration_ids()
+    }
+    
+    class ManagerialPort {
+        <<protocol>>
+        +bind_adapter()
+        +bind_container_assignment()
+        +unbind_container_assignment()
+        +validate_container_assignment()
+        +get_container_assignment_status()
+        +bind_execution_assignment()
+        +unbind_execution_assignment()
+        +validate_execution_assignment()
+        +get_execution_assignment_status()
+        +dispatch_round()
+        +enforce_safepoint()
+        +collect_operational_evidence()
+        +list_available_adapters()
+        +configure_dispatch_failure_policy()
+        +configure_signal_qos_profile()
+        +configure_mandatory_label_schema()
+        +configure_slot_lifecycle_policy()
+        +configure_level_container_policy()
+        +configure_resolver_pipeline_policy()
+        +configure_previewer_profile()
+        +configure_loglevel_api_policy()
+        +apply_configuration()
+        +activate_production_profile()
+        +get_active_production_profile_id()
+        +bind_previewer_adapter()
+    }
+    
+    class ConsumingPort {
+        <<protocol>>
+        +submit_signal_or_request()
+        +query_projection()
+        +subscribe_notifications()
+        +read_only_inspection()
+        +emit()
+        +query()
+        +log_debug()
+        +log_info()
+        +log_warn()
+        +log_error()
+        +log_fatal()
+        +log_trace()
+    }
+    
+    class LogContainerProviderPort {
+        <<protocol>>
+        +enqueue_pending()
+        +drain_pending()
+        +commit_dispatched()
+        +requeue_pending()
+        +configure_retention()
+        +pending_count()
+        +query_projection()
+        +stored_count()
+        +subscribe_listener()
+        +partition_sizes()
+        +level_containers()
+        +slot_lifecycle()
+    }
+    
+    class AdapterRegistryPort {
+        <<protocol>>
+        +register()
+        +resolve()
+        +list_keys()
+    }
+    
+    class ResourceManagementClientPort {
+        <<protocol>>
+        +request_container_lease()
+        +validate_container_lease()
+        +get_container_lease()
+        +release_container_lease()
+        +request_execution_lease()
+        +validate_execution_lease()
+        +get_execution_lease()
+        +release_execution_lease()
+        +get_execution_profile()
+    }
+    
+    class StateStorePort {
+        <<protocol>>
+        +load()
+        +save()
+        +exists()
+    }
+    
+    class PreviewerIntegrationPort {
+        <<protocol>>
+        +configure_profile()
+    }
+    
+    class OpenTelemetryAdapterPort {
+        <<protocol>>
+        +emit_signal()
+        +capability_profile()
+    }
+    
+    AdministrativePort <|.. LoggingService
+    ManagerialPort <|.. LoggingService
+    ConsumingPort <|.. LoggingService

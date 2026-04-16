@@ -1,0 +1,20 @@
+{
+  "gate_id": "LOGSYS-VAL-002",
+  "generated_at_utc": "2026-03-11T10:46:50.816030+00:00",
+  "pass_fail": true,
+  "summary": {
+    "provider_entries_scanned": 2,
+    "execution_profiles_scanned": 2,
+    "connection_entries_scanned": 2,
+    "persistence_entries_scanned": 2,
+    "violations_count": 0
+  },
+  "violations": [],
+  "sources": {
+    "provider": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml",
+    "connection": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\18_LoggingSystem_Connections_Catalog_Contract.template.yaml",
+    "persistence": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\19_LoggingSystem_Persistence_Catalog_Contract.template.yaml",
+    "execution": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml",
+    "threading": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\23_LoggingSystem_Threading_Scheduling_Backpressure_Contract.template.yaml"
+  }
+}

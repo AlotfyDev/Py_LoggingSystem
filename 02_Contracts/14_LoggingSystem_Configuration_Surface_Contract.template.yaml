@@ -1,0 +1,90 @@
+contract:
+  contract_id: LOGSYS-C-014
+  contract_name: LoggingSystem_Configuration_Surface_Contract
+  version: 1.2.0
+  status: active
+  intent: Freeze typed, versioned, fail-closed configuration surfaces and runtime apply semantics across admin/manager/CLI layers.
+
+depends_on:
+  - ./02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+  - ./12_LoggingSystem_CLI_Command_Surface_Contract.template.yaml
+  - ./24_LoggingSystem_Production_Profile_Catalog_Contract.template.yaml
+
+configuration_surface:
+  admin_crud_required:
+    - create_configuration
+    - get_configuration
+    - update_configuration
+    - delete_configuration
+    - list_configuration_ids
+  managerial_apply_required:
+    - apply_configuration
+  supported_config_types:
+    - schema
+    - policy
+    - retention
+    - previewer_profile
+    - adapter_binding
+    - container_binding
+    - execution_binding
+    - provider_catalog_entry
+    - connection_catalog_entry
+    - persistence_catalog_entry
+    - production_profile
+
+dto_requirements:
+  mandatory_dto_packages:
+    - configurator/dtos/schema_dto.py
+    - configurator/dtos/policy_dto.py
+    - configurator/dtos/retention_dto.py
+    - configurator/dtos/previewer_profile_dto.py
+    - configurator/dtos/adapter_binding_dto.py
+    - configurator/dtos/container_binding_dto.py
+    - configurator/dtos/execution_binding_dto.py
+    - configurator/dtos/provider_catalog_entry_dto.py
+    - configurator/dtos/connection_catalog_entry_dto.py
+    - configurator/dtos/persistence_catalog_entry_dto.py
+    - configurator/dtos/production_profile_dto.py
+  mandatory_fields:
+    - config_version
+    - typed_payload
+
+validator_requirements:
+  fail_closed_validation:
+    - unsupported_config_type
+    - missing_config_version
+    - payload_not_mapping
+    - id_not_non_empty_string
+
+cli_surface:
+  mandatory_commands:
+    - config-list
+    - config-get
+    - config-create
+    - config-update
+    - config-delete
+    - config-apply
+  required_json_flags:
+    - --config-json
+
+runtime_apply_rules:
+  - schema_apply_must_activate_registered_schema
+  - retention_apply_must_call_retention_policy_surface
+  - previewer_profile_apply_must_call_previewer_profile_surface
+  - adapter_binding_apply_must_bind_registered_adapter
+  - container_binding_apply_must_bind_container_assignment_and_validate_lease
+  - execution_binding_apply_must_bind_execution_assignment_and_validate_lease
+  - provider_catalog_entry_apply_must_pass_catalog_integrity
+  - connection_catalog_entry_apply_must_pass_catalog_integrity
+  - persistence_catalog_entry_apply_must_pass_catalog_integrity
+  - production_profile_apply_must_activate_profile_and_bind_resources
+
+fail_closed_conditions:
+  - configuration_create_without_dto_shape
+  - configuration_update_without_version
+  - configuration_apply_for_unknown_entry
+  - configuration_apply_for_unsupported_type
+  - container_binding_apply_without_backend_profile
+  - execution_binding_apply_without_required_execution_profile
+  - catalog_entry_apply_with_broken_cross_catalog_integrity
+  - production_profile_apply_with_unresolved_provider_references

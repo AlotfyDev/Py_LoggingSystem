@@ -1,0 +1,41 @@
+%% Layer 4: Composables Interactions
+%% Mermaid format
+
+graph TB
+    subgraph "Adapters"
+        AR[AdapterRegistry] --> OTA[OpenTelemetryAdapter]
+        AR --> NOA[NoOpAdapter]
+        AR --> OVA[ObservabilityViewerAdapter]
+        AR --> UTA[UnavailableOpenTelemetryAdapter]
+    end
+    
+    subgraph "Resolvers"
+        WRP[WriterResolverPipeline] --> DRP[DispatcherResolverPipeline]
+        DRP --> RORP[ReadOnlyResolverPipeline]
+    end
+    
+    subgraph "Containers"
+        LVC[LevelContainers] --> SLC[SlotLifecycle]
+    end
+    
+    subgraph "Handlers"
+        LLH[LogLevelHandler] --> WRP
+        LLH --> LVC
+        LLH --> AR
+    end
+    
+    subgraph "Previewers"
+        CP[ConsolePreviewer]
+        WP[WebPreviewer]
+    end
+    
+    subgraph "Level API"
+        LI[LogInfo]
+        LD[LogDebug]
+        LE[LogError]
+        LW[LogWarn]
+        LF[LogFatal]
+        LT[LogTrace]
+    end
+    
+    style AR fill:#E1BEE7

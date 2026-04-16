@@ -1,0 +1,123 @@
+contract:
+  contract_id: LOGSYS-C-017
+  contract_name: LoggingSystem_LogContainerProvider_Catalog_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze provider catalog SSOT for log/loglevel container backends and capability-conformant selection.
+
+depends_on:
+  - ./15_LoggingSystem_LogContainerModule_Boundary_Contract.template.yaml
+  - ./16_LoggingSystem_ResourceManagementClient_LeaseBinding_Contract.template.yaml
+  - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+  - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+
+catalog_model:
+  catalog_id: LOGSYS_PROVIDER_CATALOG
+  required_fields:
+    - provider_id
+    - backend_type
+    - scope_support
+    - ordering_guarantee
+    - ack_model
+    - durability_level
+    - qos_support
+    - lease_required
+    - execution_plane_relation
+    - required_execution_profile_id
+    - backend_execution_scope
+    - supported_partition_modes
+    - fail_closed_conditions
+  allowed_backend_types:
+    - local_memory
+    - shared_memory
+    - shared_file_map
+    - redis_streams
+    - redis_lists
+    - cache_db_other
+  allowed_scope_support:
+    - in_process
+    - inter_process
+    - distributed
+  allowed_partition_modes:
+    - by_level
+    - by_tenant
+    - hybrid
+
+seed_entries:
+  - provider_id: provider.local.inmemory.level_containers
+    backend_type: local_memory
+    scope_support:
+      - in_process
+    ordering_guarantee: strict_per_partition
+    ack_model: inprocess_commit
+    durability_level: volatile_memory
+    qos_support:
+      - at_most_once
+      - bounded_queue
+    lease_required: true
+    execution_plane_relation: orthogonal_explicit_binding
+    required_execution_profile_id: exec.logging.local.default
+    backend_execution_scope: provider_backend
+    supported_partition_modes:
+      - by_level
+      - by_tenant
+      - hybrid
+    connection_profile_id: connector.local.memory
+    persistence_profile_id: persistence.local.volatile
+    fail_closed_conditions:
+      - missing_container_lease
+      - unsupported_partition_mode
+
+  - provider_id: provider.redis.streams
+    backend_type: redis_streams
+    scope_support:
+      - inter_process
+      - distributed
+    ordering_guarantee: stream_order_per_key
+    ack_model: consumer_group_ack
+    durability_level: redis_aof_or_rdb_profile_required
+    qos_support:
+      - at_least_once
+      - retry_with_backpressure
+    lease_required: true
+    execution_plane_relation: orthogonal_explicit_binding
+    required_execution_profile_id: exec.logging.distributed.redis
+    backend_execution_scope: provider_backend
+    supported_partition_modes:
+      - by_level
+      - by_tenant
+      - hybrid
+    connection_profile_id: connector.redis.tcp_tls
+    persistence_profile_id: persistence.redis.aof
+    fail_closed_conditions:
+      - missing_redis_connector_binding
+      - missing_persistence_profile
+      - unsupported_ack_mode
+
+catalog_rules:
+  provider_entry_must_reference_existing_connection_profile: true
+  provider_entry_must_reference_existing_persistence_profile: true
+  provider_binding_requires_capability_match: true
+  provider_selection_without_catalog_entry_forbidden: true
+  execution_plane_must_be_orthogonal_to_storage_plane: true
+  explicit_execution_binding_required_for_provider_activation: true
+  provider_must_not_own_execution_pool_lifecycle: true
+
+runtime_module_boundary:
+  module_root: 03_DigitalTwin/logging_system/provider_catalogs
+  required_components:
+    - provider_catalogs/models.py
+    - provider_catalogs/default_entries.py
+    - provider_catalogs/service.py
+  separation_rules:
+    - provider_catalogs_module_must_be_standalone_and_injectable
+    - logging_service_must_consume_provider_catalogs_via_service_boundary_only
+
+fail_closed_conditions:
+  - provider_missing_required_field
+  - provider_entry_with_unsupported_backend_type
+  - provider_scope_support_outside_allowed_values
+  - provider_partition_mode_outside_allowed_values
+  - provider_entry_missing_cross_catalog_reference
+  - provider_missing_execution_plane_relation
+  - provider_missing_required_execution_profile_id

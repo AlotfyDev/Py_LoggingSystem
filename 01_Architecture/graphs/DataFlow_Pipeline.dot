@@ -1,0 +1,94 @@
+// Data Flow Pipeline
+// Graphviz DOT format
+
+digraph DataFlow_Pipeline {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10, color="#1976D2", penwidth=2];
+    
+    // Input
+    subgraph cluster_input {
+        label="Input";
+        style=filled;
+        color="#E3F2FD";
+        
+        CLI [label="CLI"];
+        API [label="Level API\n(log_info, etc.)"];
+    }
+    
+    // Processing
+    subgraph cluster_processing {
+        label="Processing";
+        style=filled;
+        color="#FFF3E0";
+        
+        LS [label="LoggingService"];
+        LLH [label="LogLevelHandler"];
+        VAL [label="Validation"];
+        NORM [label="Normalization"];
+    }
+    
+    // Storage
+    subgraph cluster_storage {
+        label="Storage";
+        style=filled;
+        color="#E8F5E9";
+        
+        LCMS [label="LogContainerModule"];
+        LVC [label="LevelContainers"];
+        SLC [label="SlotLifecycle"];
+    }
+    
+    // Resolution
+    subgraph cluster_resolution {
+        label="Resolution";
+        style=filled;
+        color="#FCE4EC";
+        
+        WRP [label="WriterResolver"];
+        DRP [label="DispatcherResolver"];
+    }
+    
+    // Output
+    subgraph cluster_output {
+        label="Output";
+        style=filled;
+        color="#F3E5F5";
+        
+        AR [label="AdapterRegistry"];
+        OTA [label="OpenTelemetry"];
+        NOA [label="NoOp"];
+        OVA [label="Viewer"];
+    }
+    
+    // Connections
+    CLI -> LS;
+    API -> LS;
+    
+    LS -> LLH;
+    LLH -> VAL;
+    VAL -> NORM;
+    
+    NORM -> LCMS;
+    LCMS -> LVC;
+    LCMS -> SLC;
+    
+    LVC -> WRP;
+    WRP -> DRP;
+    
+    DRP -> AR;
+    AR -> OTA;
+    AR -> NOA;
+    AR -> OVA;
+    
+    // Arrow styles
+    CLI -> LS [label="submit"];
+    API -> LS [label="emit"];
+    LLH -> VAL [label="validate"];
+    VAL -> NORM [label="normalize"];
+    NORM -> LCMS [label="enqueue"];
+    LVC -> WRP [label="route"];
+    WRP -> DRP [label="dispatch"];
+    DRP -> AR [label="resolve"];
+    AR -> OTA [label="emit"];
+}

@@ -1,0 +1,217 @@
+{
+  "generated_at": "2026-04-15",
+  "comparison": {
+    "as_designed": "LoggingSystem",
+    "as_implemented": "LoggingSystem",
+    "extraction_method": "Unknown"
+  },
+  "summary": {
+    "designed_total": 45,
+    "implemented_total": 101,
+    "total_matches": 39,
+    "total_missing": 6,
+    "total_extra": 24,
+    "match_percentage": 86.67
+  },
+  "categories": {
+    "ports": {
+      "designed_count": 13,
+      "implemented_count": 15,
+      "matches": [
+        "AdapterRegistryPort",
+        "AdministrativePort",
+        "ConsumingPort",
+        "LogContainerAdministrativePort",
+        "LogContainerConsumingPort",
+        "LogContainerManagerialPort",
+        "LogContainerProviderPort",
+        "ManagerialPort",
+        "ObservabilityViewerProviderPort",
+        "OpenTelemetryAdapterPort",
+        "PreviewerIntegrationPort",
+        "ResourceManagementClientPort",
+        "StateStorePort"
+      ],
+      "matches_count": 13,
+      "missing_from_implementation": [],
+      "missing_count": 0,
+      "extra_in_implementation": [
+        "PortsContractBehaviorTests",
+        "SpecializationImportPolicyTests"
+      ],
+      "extra_count": 2
+    },
+    "adapters": {
+      "designed_count": 6,
+      "implemented_count": 13,
+      "matches": [
+        "AdapterRegistry",
+        "NoOpAdapter",
+        "ObservabilityViewerAdapter",
+        "OpenTelemetryAdapter",
+        "UnavailableOpenTelemetryAdapter"
+      ],
+      "matches_count": 5,
+      "missing_from_implementation": [
+        "FileStateStore"
+      ],
+      "missing_count": 1,
+      "extra_in_implementation": [
+        "AdapterBehaviorTests",
+        "AdapterBindingDTO",
+        "AdapterRegistryBehaviorTests",
+        "AdapterRegistryPort",
+        "AdapterRegistryTests",
+        "CollectingAdapter",
+        "FailingAdapter",
+        "OpenTelemetryAdapterPort"
+      ],
+      "extra_count": 8
+    },
+    "services": {
+      "designed_count": 5,
+      "implemented_count": 6,
+      "matches": [
+        "ConfiguratorService",
+        "LogContainerModuleService",
+        "LoggingService",
+        "ProductionProfileCatalogService",
+        "ProviderCatalogService"
+      ],
+      "matches_count": 5,
+      "missing_from_implementation": [],
+      "missing_count": 0,
+      "extra_in_implementation": [
+        "LoggingServiceTests"
+      ],
+      "extra_count": 1
+    },
+    "models": {
+      "designed_count": 4,
+      "implemented_count": 4,
+      "matches": [
+        "LogEnvelope",
+        "LogRecord"
+      ],
+      "matches_count": 2,
+      "missing_from_implementation": [
+        "SchemaCatalog",
+        "utc_now_iso"
+      ],
+      "missing_count": 2,
+      "extra_in_implementation": [
+        "LogEnvelopeBehaviorTests",
+        "LogRecordBehaviorTests"
+      ],
+      "extra_count": 2
+    },
+    "containers": {
+      "designed_count": 2,
+      "implemented_count": 7,
+      "matches": [
+        "LevelContainers"
+      ],
+      "matches_count": 1,
+      "missing_from_implementation": [
+        "SlotLifecycle"
+      ],
+      "missing_count": 1,
+      "extra_in_implementation": [
+        "ContainerAssignmentBehaviorTests",
+        "ContainerBindingDTO",
+        "LogContainerAdministrativePort",
+        "LogContainerConsumingPort",
+        "LogContainerManagerialPort",
+        "LogContainerProviderPort"
+      ],
+      "extra_count": 6
+    },
+    "resolvers": {
+      "designed_count": 3,
+      "implemented_count": 3,
+      "matches": [
+        "DispatcherResolverPipeline",
+        "ReadOnlyResolverPipeline",
+        "WriterResolverPipeline"
+      ],
+      "matches_count": 3,
+      "missing_from_implementation": [],
+      "missing_count": 0,
+      "extra_in_implementation": [],
+      "extra_count": 0
+    },
+    "level_api": {
+      "designed_count": 7,
+      "implemented_count": 6,
+      "matches": [
+        "LogDebug",
+        "LogError",
+        "LogFatal",
+        "LogInfo",
+        "LogTrace",
+        "LogWarn"
+      ],
+      "matches_count": 6,
+      "missing_from_implementation": [
+        "ELogLevel"
+      ],
+      "missing_count": 1,
+      "extra_in_implementation": [],
+      "extra_count": 0
+    },
+    "previewers": {
+      "designed_count": 2,
+      "implemented_count": 4,
+      "matches": [
+        "ConsolePreviewer",
+        "WebPreviewer"
+      ],
+      "matches_count": 2,
+      "missing_from_implementation": [],
+      "missing_count": 0,
+      "extra_in_implementation": [
+        "PreviewerIntegrationPort",
+        "PreviewerProfileDTO"
+      ],
+      "extra_count": 2
+    },
+    "resource_management": {
+      "designed_count": 2,
+      "implemented_count": 3,
+      "matches": [
+        "InMemoryResourceManagementClient",
+        "ThreadPoolResourceManagementClient"
+      ],
+      "matches_count": 2,
+      "missing_from_implementation": [],
+      "missing_count": 0,
+      "extra_in_implementation": [
+        "ThreadPoolResourceManagementBehaviorTests"
+      ],
+      "extra_count": 1
+    },
+    "specialization": {
+      "designed_count": 1,
+      "implemented_count": 2,
+      "matches": [],
+      "matches_count": 0,
+      "missing_from_implementation": [
+        "LoggingViewerSpecialization"
+      ],
+      "missing_count": 1,
+      "extra_in_implementation": [
+        "SpecializationImportPolicyTests",
+        "ViewerSpecializationBehaviorTests"
+      ],
+      "extra_count": 2
+    }
+  },
+  "design_intent_analysis": {
+    "observation": "As-implemented count exceeds as-designed due to test classes and Obsolete code",
+    "recommendations": [
+      "Review extra components to determine if they are tests, obsolete, or undocumented features",
+      "Merge logging_system_Obsolete into separate analysis",
+      "Consider if test adapters (CollectingAdapter, FailingAdapter) should be part of taxonomy"
+    ]
+  }
+}

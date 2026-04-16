@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+
+def build_default_production_profiles() -> list[dict[str, object]]:
+    return [
+        {
+            "profile_id": "prod.logging.local.default",
+            "config_version": "1.0.0",
+            "status": "active",
+            "description": "Default local in-memory logging production profile.",
+            "provider_ref": "provider.local.inmemory.level_containers",
+            "connection_ref": "connector.local.memory",
+            "persistence_ref": "persistence.local.volatile",
+            "required_execution_profile_id": "exec.logging.local.default",
+            "container_backend_profile_id": "container.backend.local.inmemory",
+            "container_binding_id": "container.binding.local.default",
+            "execution_binding_id": "execution.binding.local.default",
+            "adapter_key": "telemetry.noop",
+            "metadata": {"profile_class": "local"},
+        },
+        {
+            "profile_id": "prod.logging.redis.default",
+            "config_version": "1.0.0",
+            "status": "active",
+            "description": "Redis-backed distributed logging production profile.",
+            "provider_ref": "provider.redis.streams",
+            "connection_ref": "connector.redis.tcp_tls",
+            "persistence_ref": "persistence.redis.aof",
+            "required_execution_profile_id": "exec.logging.distributed.redis",
+            "container_backend_profile_id": "container.backend.redis.streams",
+            "container_binding_id": "container.binding.redis.default",
+            "execution_binding_id": "execution.binding.redis.default",
+            "adapter_key": "telemetry.noop",
+            "metadata": {"profile_class": "distributed"},
+        },
+        {
+            "profile_id": "prod.logging.otel.default",
+            "config_version": "1.0.0",
+            "status": "active",
+            "description": "OTLP-enabled logging production profile targeting OTel Collector.",
+            "provider_ref": "provider.local.inmemory.level_containers",
+            "connection_ref": "connector.local.memory",
+            "persistence_ref": "persistence.local.volatile",
+            "required_execution_profile_id": "exec.logging.local.default",
+            "container_backend_profile_id": "container.backend.local.inmemory",
+            "container_binding_id": "container.binding.local.default",
+            "execution_binding_id": "execution.binding.local.default",
+            "adapter_key": "telemetry.opentelemetry",
+            "metadata": {
+                "profile_class": "otel_chain",
+                "otel_export_protocol": "otlp_http",
+                "otel_collector_endpoint": "http://localhost:4318",
+                "otel_pipeline_targets": ["loki", "prometheus", "tempo", "grafana"],
+            },
+        },
+    ]

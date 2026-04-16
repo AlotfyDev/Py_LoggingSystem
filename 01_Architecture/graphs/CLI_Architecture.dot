@@ -1,0 +1,125 @@
+// CLI Architecture
+// Graphviz DOT format
+
+digraph CLI_Architecture {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=9];
+    edge [fontname="Helvetica", fontsize=8];
+    
+    // CLI Entry
+    CLI [label="run_cli.py\nCLI Entry Point", shape=ellipse, style=filled, fillcolor="#E3F2FD"];
+    
+    // Parser Layer
+    subgraph cluster_parser {
+        label="Parser Layer";
+        style=filled;
+        color="#E8F5E9";
+        
+        P [label="build_parser()\nparser.py"];
+        JP [label="parse_json_object()\njson_payload_parser.py"];
+    }
+    
+    // Commands - Status
+    subgraph cluster_status {
+        label="Status Commands";
+        style=filled;
+        color="#FFF3E0";
+        
+        ST [label="status"];
+        LA [label="list-adapters"];
+        EV [label="evidence"];
+    }
+    
+    // Commands - Logging
+    subgraph cluster_logging {
+        label="Logging Commands";
+        style=filled;
+        color="#FCE4EC";
+        
+        EM [label="emit"];
+        LD [label="log-debug"];
+        LI [label="log-info"];
+        LW [label="log-warn"];
+        LE [label="log-error"];
+        LF [label="log-fatal"];
+        LT [label="log-trace"];
+    }
+    
+    // Commands - Binding
+    subgraph cluster_binding {
+        label="Binding Commands";
+        style=filled;
+        color="#E1F5FE";
+        
+        BA [label="bind-adapter"];
+        BCA [label="bind-container-assignment"];
+        BEA [label="bind-execution-assignment"];
+        UBCA [label="unbind-container-assignment"];
+        U BEA [label="unbind-execution-assignment"];
+    }
+    
+    // Commands - Schema
+    subgraph cluster_schema {
+        label="Schema Commands";
+        style=filled;
+        color="#F3E5F5";
+        
+        SL [label="schema-list"];
+        SG [label="schema-get"];
+        SC [label="schema-create"];
+        SU [label="schema-update"];
+        SD [label="schema-delete"];
+    }
+    
+    // Commands - Production
+    subgraph cluster_production {
+        label="Production Profile Commands";
+        style=filled;
+        color="#E0F2F1";
+        
+        PPA [label="production-profile-activate"];
+        PPL [label="production-profile-list"];
+    }
+    
+    // Commands - Dispatch
+    subgraph cluster_dispatch {
+        label="Dispatch Commands";
+        style=filled;
+        color="#FFCCBC";
+        
+        DP [label="dispatch"];
+        SP [label="safepoint"];
+    }
+    
+    // LoggingService (target)
+    LS [label="LoggingService", shape=ellipse, style=filled, fillcolor="#C8E6C9"];
+    
+    // Connections
+    CLI -> P;
+    P -> JP;
+    
+    P -> ST -> LS;
+    P -> LA -> LS;
+    P -> EV -> LS;
+    
+    P -> EM -> LS;
+    P -> LD -> LS;
+    P -> LI -> LS;
+    P -> LW -> LS;
+    P -> LE -> LS;
+    P -> LF -> LS;
+    P -> LT -> LS;
+    
+    P -> BA -> LS;
+    P -> BCA -> LS;
+    P -> BEA -> LS;
+    
+    P -> SL -> LS;
+    P -> SG -> LS;
+    P -> SC -> LS;
+    
+    P -> PPA -> LS;
+    
+    P -> DP -> LS;
+    P -> SP -> LS;
+}

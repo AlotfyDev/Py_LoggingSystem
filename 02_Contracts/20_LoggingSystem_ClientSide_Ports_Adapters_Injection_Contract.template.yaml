@@ -1,0 +1,70 @@
+contract:
+  contract_id: LOGSYS-C-020
+  contract_name: LoggingSystem_ClientSide_Ports_Adapters_Injection_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze client-side port/adapter responsibilities for injection and consumption against provider/connection/persistence catalogs.
+
+depends_on:
+  - ./02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+  - ./16_LoggingSystem_ResourceManagementClient_LeaseBinding_Contract.template.yaml
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+  - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+  - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+  - ./22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+  - ./23_LoggingSystem_Threading_Scheduling_Backpressure_Contract.template.yaml
+
+client_side_surfaces:
+  mandatory_ports:
+    - log_container_provider_port
+    - resource_management_client_port
+    - provider_catalog_reader_port
+    - connections_catalog_reader_port
+    - persistence_catalog_reader_port
+  mandatory_adapter_boundaries:
+    - provider_catalog_resolver_adapter
+    - connections_catalog_resolver_adapter
+    - persistence_catalog_resolver_adapter
+    - log_container_provider_adapter
+    - resource_management_client_adapter
+
+injection_rules:
+  provider_binding_must_reference_catalog_entry: true
+  provider_binding_must_reference_connection_profile: true
+  provider_binding_must_reference_persistence_profile: true
+  provider_binding_requires_valid_lease: true
+  logging_service_must_not_call_provider_internal_implementation_directly: true
+  all_bindings_must_happen_via_ports_and_adapters: true
+
+client_consumption_contract:
+  required_consumed_fields:
+    - provider_id
+    - container_backend_profile_id
+    - container_binding_id
+    - connection_profile_id
+    - persistence_profile_id
+    - required_execution_profile_id
+    - execution_binding_id
+    - execution_lease_id
+    - thread_safety_mode
+    - queue_policy_id
+    - container_lease_id
+  assignment_sequence:
+    - resolve_provider_catalog_entry
+    - resolve_connections_catalog_entry
+    - resolve_persistence_catalog_entry
+    - validate_cross_catalog_compatibility
+    - resolve_execution_profile_and_binding
+    - validate_threading_and_queue_conformance
+    - bind_container_assignment
+    - validate_container_lease
+
+fail_closed_conditions:
+  - missing_client_side_mandatory_port
+  - missing_catalog_resolver_adapter
+  - provider_binding_without_catalog_resolution
+  - binding_without_cross_catalog_match
+  - binding_without_execution_profile_resolution
+  - binding_without_threading_conformance
+  - binding_without_valid_lease
+  - direct_provider_internal_import_detected

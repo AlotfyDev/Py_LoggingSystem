@@ -1,0 +1,46 @@
+contract:
+  contract_id: LOGSYS-C-021
+  contract_name: LoggingSystem_Catalog_Integrity_Validator_Gate_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze fail-closed validator gate for cross-catalog integrity (provider -> connection -> persistence).
+
+depends_on:
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+  - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+  - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+  - ./20_LoggingSystem_ClientSide_Ports_Adapters_Injection_Contract.template.yaml
+  - ./22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+  - ./23_LoggingSystem_Threading_Scheduling_Backpressure_Contract.template.yaml
+
+validator_gate:
+  gate_id: LOGSYS-VAL-001
+  validator_script: ../00_Project_Management/automation/validate_catalog_integrity_gate.py
+  report_output: ../00_Project_Management/05_LOGSYS_VAL_Catalog_Integrity_Report.json
+  mode: fail_closed
+
+required_checks:
+  - provider_required_fields_present
+  - provider_backend_type_allowed
+  - provider_scope_support_allowed
+  - provider_partition_modes_allowed
+  - provider_to_connection_reference_resolves
+  - provider_to_persistence_reference_resolves
+  - connection_provider_id_matches_provider_entry
+  - persistence_provider_id_matches_provider_entry
+  - provider_ack_model_compatible_with_persistence_ack_semantics
+
+execution_rule:
+  must_run_before:
+    - runtime_progression
+    - catalog_driven_binding_enablement
+  non_zero_exit_code_blocks_progression: true
+
+fail_closed_conditions:
+  - missing_catalog_contract_file
+  - yaml_parse_failure
+  - unresolved_provider_reference
+  - provider_connection_provider_id_mismatch
+  - provider_persistence_provider_id_mismatch
+  - ack_semantics_incompatibility
+  - report_write_failure

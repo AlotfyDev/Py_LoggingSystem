@@ -1,0 +1,176 @@
+{
+  "generated_at_utc": "2026-03-10 05:22:23Z",
+  "comparison_mode": "strict_file_diff_excluding___pycache___and_.pyc",
+  "old_root": "d:/PythonTrader/NK_System/03.0020_LoggingSystem/03_DigitalTwin/logging_system_Obsolete",
+  "new_root": "d:/PythonTrader/NK_System/03.0020_LoggingSystem/03_DigitalTwin/logging_system",
+  "verdict": "PASS",
+  "counts": {
+    "old_files": 55,
+    "new_files": 56,
+    "common_files": 55,
+    "unchanged_common_files": 30,
+    "changed_common_files": 25,
+    "missing_in_new": 0,
+    "extra_in_new": 1
+  },
+  "metrics": {
+    "structural_completeness_percent": 100.0,
+    "content_parity_percent": 54.55
+  },
+  "missing_in_new": [],
+  "extra_in_new": [
+    "tests/test_new_components_behavior.py"
+  ],
+  "changed_common_files": [
+    {
+      "path": "__init__.py",
+      "old_sha256": "09f768d38f32719a86e0abbee07fab9faccdc4357d4b65ff5f4b296c44531ad8",
+      "new_sha256": "b93d5c2a8d8d7960519b584925a47be46766d68e09d6a2540e50c99bbfafb5de",
+      "status": "changed"
+    },
+    {
+      "path": "cli/parser.py",
+      "old_sha256": "e4196c5e4974f95c9c526b2e80ab6ce18d18ba0cf21201fbd154f756095e07a0",
+      "new_sha256": "c17c2a69a50fd59cb875087a005f72dfe6578f9bc793645bb0d5889e89fdf98b",
+      "status": "changed"
+    },
+    {
+      "path": "cli/run_cli.py",
+      "old_sha256": "a6979ad9b28ce5c4382c63a623fdab4b8d2b627375676a57342fa3127108b683",
+      "new_sha256": "3a6a02caedc4634a7c89441a9f10ef4306493486b806640467a03dcf1264515d",
+      "status": "changed"
+    },
+    {
+      "path": "containers/__init__.py",
+      "old_sha256": "4ea9f634c05d6586b5b28b661538d8624c0637854ff5c621a3f03f7b931cf91b",
+      "new_sha256": "836ac4da8ee3e4a168a5c80dbe4f46ed4c0c853db192a4b0f3bc4376e112a081",
+      "status": "changed"
+    },
+    {
+      "path": "containers/level_containers.py",
+      "old_sha256": "ce4c8d76de24fd95a53d1a1ef2e4f06396bd9a5cf69bedec2edb821508c66144",
+      "new_sha256": "58d9bc82451bc1ffd9aa03116241deba4f39e0749f52a837810725ceb3416f58",
+      "status": "changed"
+    },
+    {
+      "path": "containers/slot_lifecycle.py",
+      "old_sha256": "84287750d9c75c0bcd2ef9f214d1435e2523d2a023c135d598452b205af35398",
+      "new_sha256": "f7a9f7eefe50a856578a46966afe754dfea9847a42e833678a47579392145d3c",
+      "status": "changed"
+    },
+    {
+      "path": "handlers/__init__.py",
+      "old_sha256": "4ea9f634c05d6586b5b28b661538d8624c0637854ff5c621a3f03f7b931cf91b",
+      "new_sha256": "90335a5d1bf2dd4eb47336c070159d104adfc1f669b0bbf81dcb824f02f49087",
+      "status": "changed"
+    },
+    {
+      "path": "handlers/log_level_handler.py",
+      "old_sha256": "8de27d098ada5b8a5ecbd243c2d3e5eb59bab193c8407eaa18d1c54e43609568",
+      "new_sha256": "d2d2d1468af6498d26b7db6b3e00fc6a214d078986c9edc2b164c0b6a33891e7",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/__init__.py",
+      "old_sha256": "4ea9f634c05d6586b5b28b661538d8624c0637854ff5c621a3f03f7b931cf91b",
+      "new_sha256": "a383b43e8d22efd9cb495c1a9f2ddb13e26179994d00ce51615058cb76eafab6",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/e_log_level.py",
+      "old_sha256": "ce7c2aadebf6e7d85d91bdb68d1035326ce71cf5891863c6c36c07cc5a1d668f",
+      "new_sha256": "68810854c9a762706d59a622ed5154cdd3074518b43ac386463c10cdc6e5df16",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_debug.py",
+      "old_sha256": "5fb3fa9febac8f800ecfd84be10d1111e06541e09e89a0f9582c19677cddfa50",
+      "new_sha256": "9e5ce72fd16789fa93958f66ecfd744032fd7bf1cea0f3dac5f3a60cd2bea2e0",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_error.py",
+      "old_sha256": "69758e9013fb6f306d5535acf03777d15533d61057e006c2bb17346ae3679779",
+      "new_sha256": "5daec2d33c05565a2a14da261d4126d94dec1ba46210567eaa1854948e153e59",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_fatal.py",
+      "old_sha256": "31f5ed6037a9c425348de7ac9f96c67e78625511efdee65f8744232dbf9a1255",
+      "new_sha256": "2958d0edad52c2d2642ae42e04696e84b83b1acb6625ba733162427c1712a80f",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_info.py",
+      "old_sha256": "46e2442ef808057e85a5bfd89427a73acfa592562a8d37da0e7f29444f9f76d3",
+      "new_sha256": "14de46aa5acafaf06746154357ca0bb12348ee029ae4295d07487ea2b5e99c76",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_trace.py",
+      "old_sha256": "275901ff87a047604b9117674433b5cdb329eb459f1599649742bbddb851f6fd",
+      "new_sha256": "f20046421194376f4489b6bad2b6af2f95bb020d45f60f9c295ac47a363a8df8",
+      "status": "changed"
+    },
+    {
+      "path": "level_api/log_warn.py",
+      "old_sha256": "106f39c12b4b4ab7295a755766eb42ac7698b854ee9f59f11e3d677e60d2a0be",
+      "new_sha256": "d95d3249256b65de8322f65d096a4f1d54cd6a42cd4d11a8bd30dd1f241f8651",
+      "status": "changed"
+    },
+    {
+      "path": "previewers/__init__.py",
+      "old_sha256": "4ea9f634c05d6586b5b28b661538d8624c0637854ff5c621a3f03f7b931cf91b",
+      "new_sha256": "ac66dfedfdc3af1be4df2216062bd96f0032664a8fc892691309b5b62b2385bc",
+      "status": "changed"
+    },
+    {
+      "path": "previewers/console_previewer.py",
+      "old_sha256": "fea74489e6e371287a2a7c4b48fcd9dde32e11c78128bb5e927c68b8af148136",
+      "new_sha256": "06358c20c69389517b1ca534627f10a5f1c36586a7e9652e84a151edc509d423",
+      "status": "changed"
+    },
+    {
+      "path": "previewers/web_previewer.py",
+      "old_sha256": "09694ef5bd1dbf9ebf2c41d651254cb463264a7fa1f09bb429f11d47aa99caab",
+      "new_sha256": "97d4b9dd8b6bd49b8df91a9763035d4d5d2692bda9c32b9d69be7b99079cc163",
+      "status": "changed"
+    },
+    {
+      "path": "resolvers/__init__.py",
+      "old_sha256": "4ea9f634c05d6586b5b28b661538d8624c0637854ff5c621a3f03f7b931cf91b",
+      "new_sha256": "77ab46fc468253adbc02e0fed189bf196e5c8c9ed77ea5026c5231ceff3f6d48",
+      "status": "changed"
+    },
+    {
+      "path": "resolvers/dispatcher_resolver_pipeline.py",
+      "old_sha256": "a23d247549800fdd65bc07593aeb90270b29a7d080bb1a81cc5ef6b092c79db0",
+      "new_sha256": "e82ebe503d03ccf9220c151db8029123d91b9e8515fb9de4522ed4eb10b3cd45",
+      "status": "changed"
+    },
+    {
+      "path": "resolvers/readonly_resolver_pipeline.py",
+      "old_sha256": "c088b8b76a70604ebe7341d0897675977077641a41da41d30013c60ae40cce8c",
+      "new_sha256": "ad90535cd11584c2d420c2a5e14c567b0f98cbffe805335a47a1c37880a22875",
+      "status": "changed"
+    },
+    {
+      "path": "resolvers/writer_resolver_pipeline.py",
+      "old_sha256": "e98d57f06076c90046a788df548b445581fa7ba04958a97f0e137362ee19f047",
+      "new_sha256": "14755691ded9494d0757703ecd6c0496954a5cad94c82562d4f7329643f94c39",
+      "status": "changed"
+    },
+    {
+      "path": "services/logging_service.py",
+      "old_sha256": "a718c009a11f6942f2f0292613ec814e2e9e7b7ca57aa338d858712faa64bf47",
+      "new_sha256": "732c573b76d64e020d03c735d2e78a18fdbfd6746e4e8c6873ffad184dd4a973",
+      "status": "changed"
+    },
+    {
+      "path": "tests/test_cli_behavior.py",
+      "old_sha256": "c6e33ce334ec84880ce68a9d3053d5e9d07a1e0f09f50d17531e5f466ae5bedf",
+      "new_sha256": "586b404c48a69302d9159be7facd5c5d804fe04ac0f125705172a16ff2b22b45",
+      "status": "changed"
+    }
+  ]
+}

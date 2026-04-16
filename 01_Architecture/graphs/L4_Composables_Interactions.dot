@@ -1,0 +1,77 @@
+// Layer 4: Composables Interactions
+// Graphviz DOT format
+
+digraph L4_Composables {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // Subgraphs for organization
+    subgraph cluster_adapters {
+        label="Adapters";
+        bgcolor="#F3E5F5";
+        AR [label="AdapterRegistry", shape=ellipse, style=filled, fillcolor="#E1BEE7"];
+        OTA [label="OpenTelemetryAdapter\n(telemetry.opentelemetry)"];
+        NOA [label="NoOpAdapter\n(telemetry.noop)"];
+        OVA [label="ObservabilityViewerAdapter\n(viewer.observability)"];
+        UTA [label="UnavailableOpenTelemetryAdapter"];
+    }
+    
+    subgraph cluster_resolvers {
+        label="Resolvers";
+        bgcolor="#E8F5E9";
+        WRP [label="WriterResolverPipeline"];
+        DRP [label="DispatcherResolverPipeline"];
+        RORP [label="ReadOnlyResolverPipeline"];
+    }
+    
+    subgraph cluster_containers {
+        label="Containers";
+        bgcolor="#E3F2FD";
+        LVC [label="LevelContainers"];
+        SLC [label="SlotLifecycle"];
+    }
+    
+    subgraph cluster_handlers {
+        label="Handlers";
+        bgcolor="#FFF3E0";
+        LLH [label="LogLevelHandler"];
+    }
+    
+    subgraph cluster_previewers {
+        label="Previewers";
+        bgcolor="#FCE4EC";
+        CP [label="ConsolePreviewer"];
+        WP [label="WebPreviewer"];
+    }
+    
+    subgraph cluster_levelapi {
+        label="Level API";
+        bgcolor="#E0F2F1";
+        LI [label="LogInfo"];
+        LD [label="LogDebug"];
+        LE [label="LogError"];
+        LW [label="LogWarn"];
+        LF [label="LogFatal"];
+        LT [label="LogTrace"];
+    }
+    
+    // Connections
+    AR -> OTA;
+    AR -> NOA;
+    AR -> OVA;
+    AR -> UTA;
+    
+    WRP -> DRP;
+    DRP -> RORP;
+    
+    LVC -> SLC;
+    
+    LLH -> WRP;
+    LLH -> LVC;
+    LLH -> AR;
+    
+    // Cross-component connections
+    DRP -> AR [style=dashed];
+    RORP -> LVC [style=dashed];
+}

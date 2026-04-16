@@ -1,0 +1,48 @@
+contract:
+  contract_id: LOGSYS-C-025
+  contract_name: LoggingSystem_ProviderCatalog_ProfileBinding_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze explicit separation and binding between ProviderCatalog ownership and ProductionProfileCatalog consumption.
+
+depends_on:
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+  - ./24_LoggingSystem_Production_Profile_Catalog_Contract.template.yaml
+
+separation_model:
+  provider_catalog_ownership:
+    - provider_entries_define_backend_capabilities
+    - connection_entries_define_connector_capabilities
+    - persistence_entries_define_durability_and_replay_capabilities
+  production_profile_ownership:
+    - profile_selects_provider_catalog_members
+    - profile_declares_runtime_binding_templates
+    - profile_drives_activation_bindings_for_container_execution_adapter
+
+binding_rules:
+  required_refs:
+    - provider_ref
+    - connection_ref
+    - persistence_ref
+    - required_execution_profile_id
+  ref_resolution_order:
+    - provider_ref
+    - connection_ref
+    - persistence_ref
+    - execution_profile_ref
+  consistency_constraints:
+    - provider.connection_profile_id_must_equal_profile.connection_ref
+    - provider.persistence_profile_id_must_equal_profile.persistence_ref
+    - provider.required_execution_profile_id_must_equal_profile.required_execution_profile_id
+    - connection.provider_id_must_equal_profile.provider_ref
+    - persistence.provider_id_must_equal_profile.provider_ref
+
+validator_gate:
+  gate_id: LOGSYS-VAL-003
+  script: 00_Project_Management/automation/validate_catalog_integrity_gate.py
+  report: 00_Project_Management/05_LOGSYS_VAL_Catalog_Integrity_Report.json
+
+fail_closed_conditions:
+  - profile_references_missing_catalog_entries
+  - profile_to_provider_consistency_violation
+  - profile_activation_without_integrity_pass

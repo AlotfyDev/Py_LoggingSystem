@@ -1,0 +1,71 @@
+// Threading Model
+// Graphviz DOT format
+
+digraph Threading_Model {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // Thread Safety Modes
+    subgraph cluster_modes {
+        label="Thread Safety Modes";
+        style=filled;
+        color="#E3F2FD";
+        
+        SW [label="single_writer_per_partition", shape=ellipse, style=filled, fillcolor="#C8E6C9"];
+        TSL [label="thread_safe_locked", shape=ellipse, style=filled, fillcolor="#FFF9C4"];
+        LFC [label="lock_free_cas", shape=ellipse, style=filled, fillcolor="#FFCDD2"];
+    }
+    
+    // Characteristics
+    subgraph cluster_chars {
+        label="Characteristics";
+        style=filled;
+        color="#E8F5E9";
+        
+        C1 [label="Default Mode\nOptimized for single-writer"];
+        C2 [label="Full RLock\nAll operations synchronized"];
+        C3 [label="Compare-and-Swap\nLock-free operations"];
+    }
+    
+    // Use Cases
+    subgraph cluster_usecases {
+        label="Use Cases";
+        style=filled;
+        color="#FFF3E0";
+        
+        U1 [label="High throughput\nSingle-threaded producers"];
+        U2 [label="Multi-threaded\nSafety priority"];
+        U3 [label="Maximum throughput\nLow contention"];
+    }
+    
+    // Backpressure Actions
+    subgraph cluster_backpressure {
+        label="Backpressure Actions";
+        style=filled;
+        color="#FCE4EC";
+        
+        BP1 [label="block"];
+        BP2 [label="drop_oldest"];
+        BP3 [label="drop_newest"];
+        BP4 [label="sample"];
+        BP5 [label="retry_with_jitter"];
+    }
+    
+    // Connections
+    SW -> C1;
+    TSL -> C2;
+    LFC -> C3;
+    
+    C1 -> U1;
+    C2 -> U2;
+    C3 -> U3;
+    
+    // Legend
+    legend [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD COLSPAN="2"><B>Legend</B></TD></TR>
+        <TR><TD BGCOLOR="#C8E6C9">Green</TD><TD>Recommended default</TD></TR>
+        <TR><TD BGCOLOR="#FFF9C4">Yellow</TD><TD>Safe but slower</TD></TR>
+        <TR><TD BGCOLOR="#FFCDD2">Red</TD><TD>Maximum performance</TD></TR>
+    </TABLE>>, shape=none];
+}

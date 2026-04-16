@@ -1,0 +1,22 @@
+%% Layer 3: Services Dependencies
+%% Mermaid format
+
+graph LR
+    LS[LoggingService] --> CCS[ConfiguratorService]
+    LS --> PC[ProviderCatalogService]
+    LS --> PP[ProductionProfileCatalogService]
+    LS --> LCMS[LogContainerModuleService]
+    
+    CCS --> PC
+    CCS --> PP
+    
+    PP --> PC
+    
+    LCMS --> LVC[LevelContainers]
+    LCMS --> SLC[SlotLifecycle]
+    
+    style LS fill:#E8F5E9
+    style CCS fill:#E3F2FD
+    style PC fill:#FFF3E0
+    style PP fill:#FCE4EC
+    style LCMS fill:#E1F5FE

@@ -1,0 +1,22 @@
+{
+  "gate_id": "LOGSYS-VAL-001",
+  "generated_at_utc": "2026-03-11T10:46:50.574226+00:00",
+  "pass_fail": true,
+  "summary": {
+    "provider_entries_scanned": 2,
+    "connection_entries_scanned": 2,
+    "persistence_entries_scanned": 2,
+    "violations_count": 0
+  },
+  "violations": [],
+  "sources": {
+    "provider_contract": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml",
+    "connection_contract": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\18_LoggingSystem_Connections_Catalog_Contract.template.yaml",
+    "persistence_contract": "D:\\PythonTrader\\NK_System\\03.0020_LoggingSystem\\02_Contracts\\19_LoggingSystem_Persistence_Catalog_Contract.template.yaml"
+  },
+  "catalog_model_ids": {
+    "provider": "LOGSYS_PROVIDER_CATALOG",
+    "connection": "LOGSYS_CONNECTIONS_CATALOG",
+    "persistence": "LOGSYS_PERSISTENCE_CATALOG"
+  }
+}

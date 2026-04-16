@@ -1,0 +1,59 @@
+contract:
+  contract_id: LOGSYS-C-011
+  contract_name: LoggingSystem_Dedicated_LogLevel_API_Objects_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze dedicated log-level API objects and templated handler contract without mandatory generic log entrypoint.
+
+api_surface_policy:
+  require_generic_log_entrypoint: false
+  require_dedicated_level_entrypoints: true
+  required_level_entrypoints:
+    - LogDebug
+    - LogInfo
+    - LogWarn
+    - LogError
+    - LogFatal
+    - LogTrace
+
+handler_contract:
+  handler_style: generic_templated_handler
+  required_handler_methods:
+    - normalize_envelope
+    - route_to_level_container
+    - apply_schema_validation
+    - publish_dispatch_event
+  level_binding_required: true
+
+e_log_level_enum:
+  required: true
+  canonical_order:
+    - ERR
+    - Debug
+    - Info
+    - Fatal
+    - Trace
+    - Warn
+  canonical_runtime_mapping:
+    ERR: ERROR
+    Debug: DEBUG
+    Info: INFO
+    Fatal: FATAL
+    Trace: TRACE
+    Warn: WARN
+
+envelope_binding:
+  required_fields:
+    - message_id
+    - schema_id
+    - correlation_id
+    - trace_id
+    - span_id
+    - level
+    - timestamp_utc
+
+fail_closed_conditions:
+  - missing_dedicated_level_entrypoint
+  - generic_log_entrypoint_marked_as_mandatory
+  - missing_level_binding_in_handler
+  - missing_e_log_level_enum_or_mapping

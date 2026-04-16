@@ -1,0 +1,106 @@
+contract:
+  contract_id: LOGSYS-C-022
+  contract_name: LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze execution/thread resource binding as an orthogonal plane to log container providers and storage catalogs.
+
+depends_on:
+  - ./16_LoggingSystem_ResourceManagementClient_LeaseBinding_Contract.template.yaml
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+  - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+  - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+
+execution_profile_catalog:
+  catalog_id: LOGSYS_EXECUTION_PROFILE_CATALOG
+  required_fields:
+    - execution_profile_id
+    - scope_support
+    - queue_model
+    - queue_bounds
+    - scheduling_policy
+    - thread_safety_mode
+    - backpressure_policy
+    - lease_policy
+    - fail_closed_conditions
+
+  seed_entries:
+    - execution_profile_id: exec.logging.local.default
+      scope_support:
+        - in_process
+      queue_model: bounded_fifo
+      queue_bounds:
+        max_items: 5000
+      scheduling_policy:
+        kind: fixed_priority
+        priority_bands:
+          - error_fatal
+          - warn
+          - info_debug_trace
+      thread_safety_mode: single_writer_per_partition
+      backpressure_policy:
+        action: drop_oldest
+        severity_overrides:
+          fatal: block
+          error: retry_with_jitter
+      lease_policy:
+        required: true
+        ttl_seconds: 300
+        renewable: true
+      fail_closed_conditions:
+        - unbounded_queue_forbidden
+        - missing_execution_lease
+
+    - execution_profile_id: exec.logging.distributed.redis
+      scope_support:
+        - inter_process
+        - distributed
+      queue_model: bounded_priority
+      queue_bounds:
+        max_items: 20000
+      scheduling_policy:
+        kind: weighted_fair
+        queue_weights:
+          high: 6
+          medium: 3
+          low: 1
+      thread_safety_mode: thread_safe_locked
+      backpressure_policy:
+        action: retry_with_jitter
+        severity_overrides:
+          fatal: block
+      lease_policy:
+        required: true
+        ttl_seconds: 120
+        renewable: true
+      fail_closed_conditions:
+        - queue_policy_missing
+        - lease_expired_during_dispatch
+
+binding_surface:
+  required_binding_fields:
+    - execution_binding_id
+    - provider_id
+    - required_execution_profile_id
+    - execution_lease_id
+    - queue_policy_id
+    - thread_safety_mode
+    - binding_state
+  allowed_binding_states:
+    - active
+    - draining
+    - suspended
+    - expired
+
+binding_rules:
+  explicit_binding_required_before_dispatch: true
+  lease_must_be_valid_for_binding_state_active: true
+  provider_and_execution_profile_must_be_compatible: true
+  execution_plane_must_remain_orthogonal_to_storage_plane: true
+  logging_execution_scope_must_be_separate_from_backend_execution_scope: true
+
+fail_closed_conditions:
+  - missing_execution_profile_catalog_entry
+  - missing_execution_binding_field
+  - binding_without_valid_lease
+  - provider_dispatch_without_active_execution_binding

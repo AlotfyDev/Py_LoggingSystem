@@ -1,0 +1,74 @@
+contract:
+  contract_id: LOGSYS-C-013
+  contract_name: LoggingSystem_ObservabilityViewer_SpecializationPack_Contract
+  version: 1.2.0
+  status: active
+  intent: Freeze LoggingSystem consumption of OVS-owned specialization pack for composition using provider ports/adapters only.
+
+depends_on:
+  - ./08_LoggingSystem_LoggerPreviewer_Profile_Contract.template.yaml
+  - ../../03.0061_ObservabilityViewerSystem/02_Contracts/09_ObservabilityViewerSystem_Specialization_PublicAPI_Contract.template.yaml
+  - ../../03.0061_ObservabilityViewerSystem/02_Contracts/06_ObservabilityViewerSystem_Consumer_Specialization_Contract.template.yaml
+  - ../../03.0061_ObservabilityViewerSystem/02_Contracts/07_ObservabilityViewerSystem_Render_Mode_And_TargetProfile_Contract.template.yaml
+
+specialization_pack:
+  source_of_truth:
+    module: ../../03.0061_ObservabilityViewerSystem/03_DigitalTwin/observability_viewer_system/specialized/logging
+    public_api_functions:
+      - build_pack
+      - register_pack
+      - map_record
+      - build_profile_config
+      - upsert_profile_config
+      - apply_profile_config
+  required_sections:
+    - envelope_mapper
+    - content_schema
+    - console_format
+    - web_format
+    - default_mode_and_target
+    - required_renderer_adapter_keys
+    - specialization_profile_config
+    - compatibility
+  profile_id: logging.default
+  schema_id: logging.schema.v1
+  console_format_id: logging.console.default.v1
+  web_format_id: logging.web.default.v1
+  default_mode: collective
+  default_target: console
+  compatibility:
+    pack_version: required
+    min_provider_version: required
+  specialization_profile_config:
+    config_type: specialization_profile
+    config_id: logging.specialization_profile.default
+    required_functions:
+      - build_logging_viewer_specialization_profile_config
+      - upsert_logging_viewer_specialization_profile_config
+      - apply_logging_viewer_specialization_profile_config
+  required_renderer_adapter_keys:
+    - console.noop
+    - web.noop
+
+integration_policy:
+  logging_core_must_not_import_viewer_vendor_sdk: true
+  composition_must_happen_via_previewer_integration_port: true
+  direct_console_web_previewer_dependency_for_external_viewer_mode_forbidden: true
+  provider_port_binding_mandatory_before_external_rendering: true
+  allowed_ovs_import_roots:
+    - observability_viewer_system.specialized
+  forbidden_ovs_import_roots:
+    - observability_viewer_system.viewer_core
+    - observability_viewer_system.format_registry
+    - observability_viewer_system.adapters
+    - observability_viewer_system.render_ports
+    - observability_viewer_system.services
+
+fail_closed_conditions:
+  - missing_specialization_pack_section
+  - missing_specialization_profile_config_surface
+  - missing_specialization_compatibility_fields
+  - profile_schema_format_reference_mismatch
+  - missing_required_renderer_adapter_key
+  - rendering_with_external_profile_without_provider_port_binding
+  - forbidden_ovs_internal_import_detected

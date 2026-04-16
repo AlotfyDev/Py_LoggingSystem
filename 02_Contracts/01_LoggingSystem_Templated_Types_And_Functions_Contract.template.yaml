@@ -1,0 +1,42 @@
+contract:
+  contract_id: LOGSYS-C-001
+  contract_name: LoggingSystem_Templated_Types_And_Functions_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze top generic templated type/function layer independent from concrete adapters.
+
+templated_layer:
+  templated_types:
+    - LogEnvelope<TContent,TContext,TMeta>
+    - LogRecord<TLevel,TMessage,TAttrs>
+    - LogRegistry<TKey,TRecord>
+    - LogContainerSlot<TEnvelope,TContent,TState>
+    - ContainerBinding<TBindingId,TBackendProfile,TLease>
+  templated_functions:
+    - emit_log(level,message,attributes,context)
+    - register_log_sink(adapter_key,adapter_port)
+    - resolve_log_schema(schema_id)
+    - query_logs(filters,paging)
+    - evict_logs(policy)
+    - bind_container_assignment(binding_id,backend_profile_id,lease_id)
+    - validate_container_lease(lease_id)
+  generic_constraints:
+    - type_parameters_must_be_explicit_in_contract_schema
+    - function_io_must_reference_templated_types
+    - no_concrete_vendor_symbols_in_generic_layer
+
+adapter_boundary:
+  rule: generic_layer_must_call_ports_only
+  forbidden:
+    - direct_vendor_sdk_calls_in_generic_layer
+    - direct_transport_protocol_logic_in_generic_layer
+
+conformance_gate:
+  required_checks:
+    - templated_types_declared
+    - templated_functions_declared
+    - generic_constraints_declared
+  fail_closed_conditions:
+    - missing_templated_type
+    - missing_templated_function
+    - vendor_symbol_detected_in_generic_layer

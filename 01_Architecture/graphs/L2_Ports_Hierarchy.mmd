@@ -1,0 +1,84 @@
+%% Layer 2: Ports Hierarchy
+%% Mermaid format
+
+classDiagram
+    class AdministrativePort {
+        <<protocol>>
+        +register_schema()
+        +create_schema()
+        +get_schema()
+        +register_policy()
+        +create_production_profile()
+        +activate_production_profile()
+        +create_provider_catalog_entry()
+        +get_provider_catalog_entry()
+        +create_connection_catalog_entry()
+        +get_connection_catalog_entry()
+        +create_persistence_catalog_entry()
+        +get_persistence_catalog_entry()
+        +validate_provider_catalog_integrity()
+        +create_configuration()
+        +get_configuration()
+    }
+    
+    class ManagerialPort {
+        <<protocol>>
+        +bind_adapter()
+        +bind_container_assignment()
+        +bind_execution_assignment()
+        +dispatch_round()
+        +enforce_safepoint()
+        +configure_dispatch_failure_policy()
+        +configure_signal_qos_profile()
+        +configure_mandatory_label_schema()
+        +configure_slot_lifecycle_policy()
+        +configure_level_container_policy()
+        +configure_resolver_pipeline_policy()
+        +configure_previewer_profile()
+        +configure_loglevel_api_policy()
+        +apply_configuration()
+        +activate_production_profile()
+        +get_active_production_profile_id()
+        +bind_previewer_adapter()
+    }
+    
+    class ConsumingPort {
+        <<protocol>>
+        +submit_signal_or_request()
+        +query_projection()
+        +subscribe_notifications()
+        +log_debug()
+        +log_info()
+        +log_error()
+        +emit()
+    }
+    
+    class LogContainerProviderPort {
+        <<protocol>>
+        +configure_retention()
+        +enqueue_pending()
+        +drain_pending()
+        +commit_dispatched()
+        +list_dispatched_records()
+    }
+    
+    class AdapterRegistryPort {
+        <<protocol>>
+        +register()
+        +resolve()
+        +list_keys()
+    }
+    
+    class ResourceManagementClientPort {
+        <<protocol>>
+        +request_container_lease()
+        +validate_container_lease()
+        +request_execution_lease()
+    }
+    
+    class StateStorePort {
+        <<protocol>>
+        +load()
+        +save()
+        +exists()
+    }

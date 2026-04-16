@@ -1,0 +1,42 @@
+// Layer 3: Services Dependencies
+// Graphviz DOT format
+
+digraph L3_Services {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10, color="#388E3C"];
+    
+    // Services
+    LS [label="LoggingService", shape=ellipse, style=filled, fillcolor="#E8F5E9"];
+    CCS [label="ConfiguratorService", style=filled, fillcolor="#E3F2FD"];
+    PC [label="ProviderCatalogService", style=filled, fillcolor="#FFF3E0"];
+    PP [label="ProductionProfileCatalogService", style=filled, fillcolor="#FCE4EC"];
+    LCMS [label="LogContainerModuleService", style=filled, fillcolor="#E1F5FE"];
+    
+    // Sub-components
+    LVC [label="LevelContainers", shape=box, style=filled, fillcolor="#E0F2F1"];
+    SLC [label="SlotLifecycle", shape=box, style=filled, fillcolor="#E0F2F1"];
+    
+    // Relationships
+    LS -> CCS [label="delegates config"];
+    LS -> PC [label="catalog lookup"];
+    LS -> PP [label="profile management"];
+    LS -> LCMS [label="log storage"];
+    
+    CCS -> PC [style=dashed, label="validates"];
+    CCS -> PP [style=dashed, label="validates"];
+    PP -> PC [style=dashed, label="references"];
+    
+    LCMS -> LVC [label="manages"];
+    LCMS -> SLC [label="manages"];
+    
+    // Legend
+    legend [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD COLSPAN="2"><B>Legend</B></TD></TR>
+        <TR><TD BGCOLOR="#E8F5E9">LoggingService</TD><TD>Central Orchestrator</TD></TR>
+        <TR><TD BGCOLOR="#E3F2FD">ConfiguratorService</TD><TD>Configuration CRUD</TD></TR>
+        <TR><TD BGCOLOR="#FFF3E0">ProviderCatalogService</TD><TD>Catalog Management</TD></TR>
+        <TR><TD BGCOLOR="#FCE4EC">ProductionProfileService</TD><TD>Profile Management</TD></TR>
+        <TR><TD BGCOLOR="#E1F5FE">LogContainerModule</TD><TD>Log Storage/Lifecycle</TD></TR>
+    </TABLE>>, shape=none];
+}

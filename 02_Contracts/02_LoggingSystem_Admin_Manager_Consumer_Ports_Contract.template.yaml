@@ -1,0 +1,117 @@
+contract:
+  contract_id: LOGSYS-C-002
+  contract_name: LoggingSystem_Admin_Manager_Consumer_Ports_Contract
+  version: 1.6.0
+  status: active
+  intent: Freeze role-separated functionality surfaces for administrative, managerial, and consuming actors.
+
+ports_surface:
+  administrative_port:
+    port_id: LOGSYS_admin_port
+    capabilities:
+      - register_schema
+      - create_schema_catalog_entry
+      - get_schema_catalog_entry
+      - update_schema_catalog_entry
+      - delete_schema_catalog_entry
+      - list_schema_catalog_entries
+      - register_policy
+      - create_policy_entry
+      - get_policy_entry
+      - update_policy_entry
+      - delete_policy_entry
+      - list_policy_entries
+      - configure_retention_and_eviction
+      - approve_runtime_profile
+      - create_runtime_profile
+      - get_runtime_profile
+      - update_runtime_profile
+      - delete_runtime_profile
+      - list_runtime_profiles
+      - create_production_profile
+      - get_production_profile
+      - update_production_profile
+      - delete_production_profile
+      - list_production_profile_ids
+      - validate_production_profile_integrity
+      - create_provider_catalog_entry
+      - get_provider_catalog_entry
+      - update_provider_catalog_entry
+      - delete_provider_catalog_entry
+      - list_provider_catalog_entries
+      - create_connection_catalog_entry
+      - get_connection_catalog_entry
+      - update_connection_catalog_entry
+      - delete_connection_catalog_entry
+      - list_connection_catalog_entries
+      - create_persistence_catalog_entry
+      - get_persistence_catalog_entry
+      - update_persistence_catalog_entry
+      - delete_persistence_catalog_entry
+      - list_persistence_catalog_entries
+      - validate_provider_catalog_integrity
+      - create_configuration
+      - get_configuration
+      - update_configuration
+      - delete_configuration
+      - list_configuration_ids
+  managerial_port:
+    port_id: LOGSYS_manager_port
+    capabilities:
+      - bind_adapter
+      - bind_container_assignment
+      - unbind_container_assignment
+      - validate_container_assignment
+      - get_container_assignment_status
+      - bind_execution_assignment
+      - unbind_execution_assignment
+      - validate_execution_assignment
+      - get_execution_assignment_status
+      - dispatch_round
+      - enforce_safepoint
+      - collect_operational_evidence
+      - configure_dispatch_failure_policy
+      - configure_signal_qos_profile
+      - configure_mandatory_label_schema
+      - configure_slot_lifecycle_policy
+      - configure_level_container_policy
+      - configure_resolver_pipeline_policy
+      - configure_previewer_profile
+      - configure_loglevel_api_policy
+      - bind_previewer_adapter
+      - apply_configuration
+      - activate_production_profile
+  consuming_port:
+    port_id: LOGSYS_consumer_port
+    capabilities:
+      - submit_signal_or_request
+      - submit_debug_signal
+      - submit_info_signal
+      - submit_warn_signal
+      - submit_error_signal
+      - submit_fatal_signal
+      - submit_trace_signal
+      - query_projection
+      - subscribe_notifications
+      - read_only_inspection
+
+separation_rules:
+  - consuming_port_must_not_mutate_admin_policy
+  - managerial_port_must_not_override_admin_authority
+  - administrative_changes_must_be_audited
+  - all_roles_must_use_provider_ports_only
+  - direct_logger_to_central_internal_calls_forbidden
+
+injection_pattern:
+  provider_port: logging_port
+  consumer_binding_mode: injectable_composable
+  mandatory_binding_fields:
+    - consumer_system_id
+    - provider_port_id
+    - capability_profile_id
+    - lease_or_session_id
+
+fail_closed_conditions:
+  - missing_role_port
+  - role_boundary_violation
+  - missing_provider_port_binding

@@ -1,0 +1,59 @@
+contract:
+  contract_id: LOGSYS-C-015
+  contract_name: LoggingSystem_LogContainerModule_Boundary_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze LogContainerModule as an independent module consumed by LoggingService through injected provider ports only.
+
+depends_on:
+  - ./02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+  - ./09_LoggingSystem_LevelContainers_And_SlotLifecycle_Contract.template.yaml
+
+module_boundary:
+  module_id: LOGSYS_LOGCONTAINER_MODULE
+  canonical_runtime_root: ../03_DigitalTwin/logging_system/log_container_module/
+  provider_port_required: log_container_provider_port
+  ownership:
+    owns:
+      - pending_records_queue
+      - dispatched_records_store
+      - listener_registry
+      - retention_application
+      - level_container_partitioning
+      - slot_lifecycle_policy_state
+    forbidden:
+      - direct_otel_export
+      - direct_cli_command_handling
+
+port_surfaces:
+  administrative:
+    - configure_retention
+    - configure_level_container_policy
+    - configure_slot_lifecycle_policy
+    - export_state
+    - import_state
+  managerial:
+    - enqueue_pending
+    - drain_pending
+    - requeue_pending_front
+    - commit_dispatched
+    - subscribe_listener
+    - notify_listeners
+  consuming:
+    - list_dispatched_records
+    - list_pending_records
+    - query_projection
+    - pending_count
+    - stored_count
+    - partition_sizes
+
+integration_rules:
+  logging_service_must_use_log_container_provider_only: true
+  direct_mutation_of_container_store_from_logging_service_forbidden: true
+  module_state_must_be_persisted_via_state_store_port: true
+
+fail_closed_conditions:
+  - missing_log_container_provider_port_binding
+  - logging_service_direct_container_store_mutation_detected
+  - dispatch_round_without_module_drain
+  - container_module_state_not_serializable

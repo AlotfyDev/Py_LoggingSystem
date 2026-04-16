@@ -1,0 +1,65 @@
+// Catalog Architecture
+// Graphviz DOT format
+
+digraph Catalog_Architecture {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9, color="#388E3C"];
+    
+    // ProviderCatalogService
+    PC [label="ProviderCatalogService", shape=ellipse, style=filled, fillcolor="#E8F5E9"];
+    
+    // Provider Entries
+    subgraph cluster_providers {
+        label="Provider Entries";
+        style=filled;
+        color="#E3F2FD";
+        
+        PE1 [label="provider.logging.local"];
+        PE2 [label="provider.logging.remote"];
+        PE3 [label="provider.telemetry.otel"];
+    }
+    
+    // Connection Entries
+    subgraph cluster_connections {
+        label="Connection Entries";
+        style=filled;
+        color="#FFF3E0";
+        
+        CE1 [label="connection.local.file"];
+        CE2 [label="connection.remote.http"];
+        CE3 [label="connection.otel.grpc"];
+    }
+    
+    // Persistence Entries
+    subgraph cluster_persistence {
+        label="Persistence Entries";
+        style=filled;
+        color="#FCE4EC";
+        
+        PSE1 [label="persistence.inmemory"];
+        PSE2 [label="persistence.file"];
+        PSE3 [label="persistence.database"];
+    }
+    
+    // Integrity Validator
+    IV [label="Catalog Integrity\nValidator", shape=diamond, style=filled, fillcolor="#FFCCBC"];
+    
+    // Relationships
+    PC -> PE1 [label="manages"];
+    PC -> PE2 [label="manages"];
+    PC -> PE3 [label="manages"];
+    
+    PE1 -> CE1 [label="uses"];
+    PE2 -> CE2 [label="uses"];
+    PE3 -> CE3 [label="uses"];
+    
+    CE1 -> PSE1 [label="backed by"];
+    CE2 -> PSE2 [label="backed by"];
+    CE3 -> PSE3 [label="backed by"];
+    
+    PC -> IV [label="validates"];
+    IV -> PE1 [style=dashed, label="check"];
+    IV -> CE1 [style=dashed, label="check"];
+    IV -> PSE1 [style=dashed, label="check"];
+}

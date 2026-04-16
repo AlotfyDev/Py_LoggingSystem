@@ -1,0 +1,52 @@
+contract:
+  contract_id: LOGSYS-C-024
+  contract_name: LoggingSystem_Production_Profile_Catalog_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze production-profile catalog as a first-class, typed, fail-closed control surface over provider catalog entries.
+
+depends_on:
+  - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+  - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+  - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+  - ./22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+
+production_profile_catalog:
+  required_runtime_module:
+    - 03_DigitalTwin/logging_system/production_profiles/service.py
+  required_runtime_methods:
+    - create_production_profile
+    - get_production_profile
+    - update_production_profile
+    - delete_production_profile
+    - list_production_profile_ids
+    - activate_production_profile
+    - validate_production_profile_integrity
+  mandatory_profile_fields:
+    - profile_id
+    - config_version
+    - status
+    - provider_ref
+    - connection_ref
+    - persistence_ref
+    - required_execution_profile_id
+    - container_backend_profile_id
+    - container_binding_id
+    - execution_binding_id
+    - adapter_key
+
+activation_rules:
+  - production_profile_activation_must_bind_container_assignment
+  - production_profile_activation_must_bind_execution_assignment
+  - production_profile_activation_must_bind_adapter
+  - active_production_profile_id_must_be_persisted
+
+fail_closed_conditions:
+  - unresolved_provider_ref
+  - unresolved_connection_ref
+  - unresolved_persistence_ref
+  - provider_connection_mismatch
+  - provider_persistence_mismatch
+  - execution_profile_mismatch_against_provider
+  - activate_non_active_profile
+  - activate_profile_with_missing_binding_refs

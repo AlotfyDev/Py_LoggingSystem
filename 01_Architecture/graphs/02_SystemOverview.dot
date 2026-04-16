@@ -1,0 +1,121 @@
+// System Overview Block Diagram
+// Graphviz DOT format
+// Requires: graphviz installation with dot command
+
+digraph LoggingSystemArchitecture {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+    edge [fontname="Helvetica", fontsize=10];
+    
+    // Color palette
+    color_user="#e3f2fd";
+    color_layer3="#e8f5e9";
+    color_layer2="#fff3e0";
+    color_layer1="#fce4ec";
+    color_layer4="#f3e5f5";
+    
+    // User/API Layer
+    subgraph cluster_user {
+        label="User/API Layer";
+        bgcolor=color_user;
+        CLI [label="CLI Interface", shape=ellipse];
+        LEVEL [label="Level API\n(log_info, log_debug, etc.)", shape=ellipse];
+    }
+    
+    // Layer 3: Services
+    subgraph cluster_layer3 {
+        label="Layer 3: Services (Stateful)";
+        bgcolor=color_layer3;
+        LS [label="LoggingService"];
+        CCS [label="ConfiguratorService"];
+        PC [label="ProviderCatalogService"];
+        PP [label="ProductionProfileCatalogService"];
+        LCMS [label="LogContainerModuleService"];
+    }
+    
+    // Layer 2: Ports
+    subgraph cluster_layer2 {
+        label="Layer 2: Ports (Interfaces)";
+        bgcolor=color_layer2;
+        ADMIN [label="AdministrativePort"];
+        MGR [label="ManagerialPort"];
+        CONS [label="ConsumingPort"];
+        LCADMIN [label="LogContainerAdminPort"];
+        LCCONS [label="LogContainerConsumingPort"];
+        LCPROV [label="LogContainerProviderPort"];
+    }
+    
+    // Layer 1: Models
+    subgraph cluster_layer1 {
+        label="Layer 1: Models (PODs)";
+        bgcolor=color_layer1;
+        LR [label="LogRecord"];
+        LE [label="LogEnvelope"];
+        SCH [label="Schema Catalog"];
+    }
+    
+    // Layer 4: Composables
+    subgraph cluster_layer4 {
+        label="Layer 4: Composables";
+        bgcolor=color_layer4;
+        
+        // Adapters
+        OTA [label="OpenTelemetryAdapter"];
+        NOA [label="NoOpAdapter"];
+        OVA [label="ObservabilityViewerAdapter"];
+        
+        // Resolvers
+        WRP [label="WriterResolverPipeline"];
+        DRP [label="DispatcherResolverPipeline"];
+        RORP [label="ReadOnlyResolverPipeline"];
+        
+        // Containers
+        LVC [label="LevelContainers"];
+        SLC [label="SlotLifecycle"];
+        
+        // Handlers
+        LLH [label="LogLevelHandler"];
+        
+        // Registry
+        AR [label="AdapterRegistry"];
+    }
+    
+    // Connections from User Layer to LoggingService
+    LEVEL -> LS [color="#1976D2", penwidth=2];
+    CLI -> LS [color="#1976D2", penwidth=2];
+    
+    // Connections from LoggingService to Ports
+    LS -> ADMIN [color="#388E3C", penwidth=2];
+    LS -> MGR [color="#388E3C", penwidth=2];
+    LS -> CONS [color="#388E3C", penwidth=2];
+    LS -> LCMS [color="#388E3C", penwidth=2];
+    
+    // Connections within Layer 3
+    LCMS -> LVC [color="#388E3C"];
+    LCMS -> SLC [color="#388E3C"];
+    LS -> CCS [color="#388E3C"];
+    LS -> PC [color="#388E3C"];
+    LS -> PP [color="#388E3C"];
+    CCS -> PC [color="#388E3C", style=dashed];
+    CCS -> PP [color="#388E3C", style=dashed];
+    
+    // Connections from LoggingService to Layer 4
+    LS -> AR [color="#7B1FA2", penwidth=2];
+    AR -> OTA [color="#7B1FA2"];
+    AR -> NOA [color="#7B1FA2"];
+    AR -> OVA [color="#7B1FA2"];
+    LS -> WRP [color="#7B1FA2", penwidth=2];
+    LS -> DRP [color="#7B1FA2", penwidth=2];
+    LS -> RORP [color="#7B1FA2", penwidth=2];
+    LS -> LLH [color="#7B1FA2", penwidth=2];
+    LLH -> WRP [color="#7B1FA2"];
+    LLH -> LVC [color="#7B1FA2"];
+    
+    // Legend
+    legend [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD COLSPAN="2"><B>Legend</B></TD></TR>
+        <TR><TD BGCOLOR="#e3f2fd">User/API Layer</TD><TD BGCOLOR="#e8f5e9">Services Layer</TD></TR>
+        <TR><TD BGCOLOR="#fff3e0">Ports Layer</TD><TD BGCOLOR="#fce4ec">Models Layer</TD></TR>
+        <TR><TD COLSPAN="2" BGCOLOR="#f3e5f5">Composables Layer</TD></TR>
+    </TABLE>>, shape=none];
+}

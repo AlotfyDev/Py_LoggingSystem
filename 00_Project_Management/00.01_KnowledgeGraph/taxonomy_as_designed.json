@@ -1,0 +1,288 @@
+{
+  "taxonomy_version": "1.0",
+  "generated_at": "2026-04-15",
+  "system": {
+    "name": "LoggingSystem",
+    "path": "03.0020_LoggingSystem",
+    "architecture_style": "Multi-Tier Object Architecture (PTOA) - Hexagonal/Ports & Adapters"
+  },
+  "layers": {
+    "L1_Models": {
+      "layer": 1,
+      "description": "Pure data transfer objects (PODs) - immutable data structures with no business logic",
+      "components": [
+        {
+          "id": "LogRecord",
+          "file": "models/record.py",
+          "description": "Immutable log entry with record_id, payload, timestamps",
+          "attributes": ["record_id", "level", "payload", "timestamp_utc", "context", "metadata", "dispatch_state", "dispatch_metadata"]
+        },
+        {
+          "id": "LogEnvelope",
+          "file": "models/envelope.py",
+          "description": "Generic envelope with content, context, metadata",
+          "generics": ["TContent", "TContext", "TMeta"]
+        },
+        {
+          "id": "SchemaCatalog",
+          "file": "models/default_content_schema_catalog.py",
+          "description": "Default schemas: DEFAULT, ERROR, AUDIT",
+          "schemas": ["default", "error", "audit"]
+        },
+        {
+          "id": "utc_now_iso",
+          "file": "models/utc_now_iso.py",
+          "description": "UTC timestamp utility function"
+        }
+      ],
+      "component_count": 4
+    },
+    "L2_Ports": {
+      "layer": 2,
+      "description": "Interface contracts using Python Protocols - boundaries between layers enabling dependency injection",
+      "components": [
+        {
+          "id": "AdministrativePort",
+          "file": "ports/administrative_port.py",
+          "type": "input_primary",
+          "methods": ["create_schema", "update_schema", "delete_schema", "list_schemas", "get_schema", "create_policy", "update_policy", "delete_policy", "list_policies", "get_policy", "create_runtime_profile", "update_runtime_profile", "delete_runtime_profile", "list_runtime_profiles", "get_runtime_profile"]
+        },
+        {
+          "id": "ConsumingPort",
+          "file": "ports/consuming_port.py",
+          "type": "input_primary",
+          "methods": ["emit", "query", "dispatch", "safepoint"]
+        },
+        {
+          "id": "LogContainerProviderPort",
+          "file": "ports/log_container_provider_port.py",
+          "type": "input_mixed",
+          "methods": ["level_containers", "slot_lifecycle", "configure_retention", "subscribe_listener", "notify_listeners"]
+        },
+        {
+          "id": "LogContainerAdministrativePort",
+          "file": "ports/log_container_administrative_port.py",
+          "type": "input_primary",
+          "methods": ["configure_container", "get_container_config"]
+        },
+        {
+          "id": "LogContainerManagerialPort",
+          "file": "ports/log_container_managerial_port.py",
+          "type": "output_secondary",
+          "methods": ["configure_level_container_policy", "configure_slot_lifecycle_policy"]
+        },
+        {
+          "id": "LogContainerConsumingPort",
+          "file": "ports/log_container_consuming_port.py",
+          "type": "input_primary",
+          "methods": ["enqueue_pending", "drain_pending", "commit_dispatched"]
+        },
+        {
+          "id": "ManagerialPort",
+          "file": "ports/managerial_port.py",
+          "type": "output_secondary",
+          "methods": ["bind_adapter", "bind_container_assignment", "bind_execution_assignment", "dispatch_round", "enforce_safepoint", "configure_dispatch_failure_policy"]
+        },
+        {
+          "id": "AdapterRegistryPort",
+          "file": "ports/adapter_registry_port.py",
+          "type": "output_secondary",
+          "methods": ["register_adapter", "unregister_adapter", "get_adapter", "list_adapters", "set_active_adapter", "get_active_adapter"]
+        },
+        {
+          "id": "ResourceManagementClientPort",
+          "file": "ports/resource_management_client_port.py",
+          "type": "output_secondary",
+          "methods": ["request_lease", "release_lease", "renew_lease", "get_lease_status"]
+        },
+        {
+          "id": "StateStorePort",
+          "file": "ports/state_store_port.py",
+          "type": "infrastructure",
+          "methods": ["save_state", "load_state", "delete_state", "list_state_ids"]
+        },
+        {
+          "id": "OpenTelemetryAdapterPort",
+          "file": "ports/open_telemetry_adapter_port.py",
+          "type": "infrastructure",
+          "methods": ["export", "flush", "shutdown", "is_available"]
+        },
+        {
+          "id": "ObservabilityViewerProviderPort",
+          "file": "ports/observability_viewer_provider_port.py",
+          "type": "infrastructure",
+          "methods": ["register_viewer", "unregister_viewer", "push_to_viewer"]
+        },
+        {
+          "id": "PreviewerIntegrationPort",
+          "file": "ports/previewer_integration_port.py",
+          "type": "infrastructure",
+          "methods": ["preview_console", "preview_web"]
+        }
+      ],
+      "component_count": 13,
+      "input_ports": 6,
+      "output_ports": 7
+    },
+    "L3_Services": {
+      "layer": 3,
+      "description": "Stateful business logic - orchestrating components and implementing port interfaces",
+      "components": [
+        {
+          "id": "LoggingService",
+          "file": "services/logging_service.py",
+          "implements": ["AdministrativePort", "ManagerialPort", "ConsumingPort"],
+          "dependencies": ["AdapterRegistry", "LogContainerModuleService", "ResourceManagementClientPort", "ProviderCatalogService", "LevelContainers", "SlotLifecycle", "WriterResolverPipeline", "DispatcherResolverPipeline", "LogLevelHandler"]
+        },
+        {
+          "id": "ConfiguratorService",
+          "file": "configurator/service.py",
+          "purpose": "Configuration management - DTO CRUD, validation, mapping"
+        },
+        {
+          "id": "ProviderCatalogService",
+          "file": "provider_catalogs/service.py",
+          "purpose": "Provider/connection/persistence catalog management"
+        },
+        {
+          "id": "ProductionProfileCatalogService",
+          "file": "production_profiles/service.py",
+          "purpose": "Production profile management with validation"
+        },
+        {
+          "id": "LogContainerModuleService",
+          "file": "log_container_module/service.py",
+          "purpose": "Log storage, lifecycle, and container operations"
+        }
+      ],
+      "component_count": 5
+    },
+    "L4_Composables": {
+      "layer": 4,
+      "description": "Composable components extending system capabilities",
+      "submodules": {
+        "adapters": {
+          "description": "Port implementations",
+          "components": [
+            {"id": "OpenTelemetryAdapter", "implements": "OpenTelemetryAdapterPort", "key": "telemetry.opentelemetry"},
+            {"id": "NoOpAdapter", "implements": "OpenTelemetryAdapterPort", "key": "telemetry.noop"},
+            {"id": "UnavailableOpenTelemetryAdapter", "implements": "OpenTelemetryAdapterPort"},
+            {"id": "ObservabilityViewerAdapter", "implements": "ObservabilityViewerProviderPort", "key": "viewer.observability"},
+            {"id": "FileStateStore", "implements": "StateStorePort"},
+            {"id": "AdapterRegistry", "implements": "AdapterRegistryPort"}
+          ],
+          "count": 6
+        },
+        "resolvers": {
+          "description": "Pipeline pattern implementations",
+          "components": [
+            {"id": "WriterResolverPipeline", "file": "resolvers/writer_resolver_pipeline.py"},
+            {"id": "DispatcherResolverPipeline", "file": "resolvers/dispatcher_resolver_pipeline.py"},
+            {"id": "ReadOnlyResolverPipeline", "file": "resolvers/readonly_resolver_pipeline.py"}
+          ],
+          "count": 3
+        },
+        "containers": {
+          "description": "Partitioned storage",
+          "components": [
+            {"id": "LevelContainers", "file": "containers/level_containers.py", "strategy": "partition_by_level_and_tenant"},
+            {"id": "SlotLifecycle", "file": "containers/slot_lifecycle.py", "purpose": "record_lifecycle_state_machine"}
+          ],
+          "count": 2
+        },
+        "level_api": {
+          "description": "Log level API",
+          "components": [
+            {"id": "ELogLevel", "file": "level_api/e_log_level.py", "values": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"]},
+            {"id": "LogDebug", "file": "level_api/log_debug.py"},
+            {"id": "LogInfo", "file": "level_api/log_info.py"},
+            {"id": "LogWarn", "file": "level_api/log_warn.py"},
+            {"id": "LogError", "file": "level_api/log_error.py"},
+            {"id": "LogFatal", "file": "level_api/log_fatal.py"},
+            {"id": "LogTrace", "file": "level_api/log_trace.py"}
+          ],
+          "count": 7
+        },
+        "previewers": {
+          "description": "Output formatting",
+          "components": [
+            {"id": "ConsolePreviewer", "file": "previewers/console_previewer.py"},
+            {"id": "WebPreviewer", "file": "previewers/web_previewer.py"}
+          ],
+          "count": 2
+        },
+        "resource_management": {
+          "description": "Resource/lease management",
+          "components": [
+            {"id": "InMemoryResourceManagementClient", "file": "resource_management/adapters/in_memory_resource_management_client.py"},
+            {"id": "ThreadPoolResourceManagementClient", "file": "resource_management/adapters/thread_pool_resource_management_client.py"}
+          ],
+          "count": 2
+        },
+        "specialization": {
+          "description": "Viewer integration",
+          "components": [
+            {"id": "LoggingViewerSpecialization", "file": "specialization/logging_viewer_specialization.py", "constants": ["LOGGING_VIEWER_SCHEMA_ID", "LOGGING_VIEWER_CONSOLE_FORMAT_ID", "LOGGING_VIEWER_WEB_FORMAT_ID"]}
+          ],
+          "count": 1
+        }
+      },
+      "total_component_count": 23
+    }
+  },
+  "patterns": {
+    "hexagonal_architecture": {
+      "enabled": true,
+      "core": "LoggingService",
+      "driving_ports": ["AdministrativePort", "ConsumingPort", "LogContainerAdministrativePort", "LogContainerConsumingPort"],
+      "driven_ports": ["ManagerialPort", "LogContainerManagerialPort", "AdapterRegistryPort", "ResourceManagementClientPort", "StateStorePort", "OpenTelemetryAdapterPort", "ObservabilityViewerProviderPort", "PreviewerIntegrationPort"]
+    },
+    "registry_pattern": {
+      "enabled": true,
+      "registry_class": "AdapterRegistry",
+      "usage": "Runtime adapter selection by key"
+    },
+    "factory_pattern": {
+      "enabled": true,
+      "factories": ["build_default_adapter_registry", "build_default_state_store"]
+    },
+    "pipeline_pattern": {
+      "enabled": true,
+      "pipelines": ["WriterResolverPipeline", "DispatcherResolverPipeline", "ReadOnlyResolverPipeline"]
+    },
+    "container_pattern": {
+      "enabled": true,
+      "containers": ["LevelContainers", "SlotLifecycle"]
+    },
+    "generic_envelope_pattern": {
+      "enabled": true,
+      "class": "LogEnvelope",
+      "generics": ["TContent", "TContext", "TMeta"]
+    }
+  },
+  "data_flow": {
+    "emit_flow": ["EntryPoint", "Normalization", "RecordCreation", "ContainerRouting", "PendingQueue"],
+    "dispatch_flow": ["Trigger", "DrainPending", "ResolveAdapter", "EmitSignal", "Commit"],
+    "output_sinks": ["OpenTelemetry", "ObservabilityViewer", "FileStateStore", "Console", "Web"]
+  },
+  "cross_cutting": {
+    "validation": ["SchemaValidation", "ProfileValidation", "CatalogIntegrity", "ConfigurationValidation"],
+    "error_handling": ["NoOpFallback", "UnavailableOTelFallback", "DispatchFailurePolicy"],
+    "threading": ["single_writer_per_partition", "thread_safe_locked", "lock_free_cas"],
+    "backpressure": ["block", "drop_oldest", "drop_newest", "sample", "retry_with_jitter"]
+  },
+  "totals": {
+    "layers": 4,
+    "total_components": 43,
+    "models": 4,
+    "ports": 13,
+    "services": 5,
+    "adapters": 6,
+    "resolvers": 3,
+    "containers": 2,
+    "level_api": 7,
+    "previewers": 2,
+    "resource_management": 2,
+    "specialization": 1
+  }
+}

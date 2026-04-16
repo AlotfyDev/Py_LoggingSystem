@@ -1,0 +1,99 @@
+// Layer 2: Ports Hierarchy
+// Graphviz DOT format
+
+digraph L2_Ports {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // AdministrativePort
+    AdministrativePort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#E3F2FD"><B>AdministrativePort</B> (Protocol)</TD></TR>
+            <TR><TD ALIGN="LEFT">+register_schema()</TD></TR>
+            <TR><TD ALIGN="LEFT">+create_schema() / get_schema() / update_schema() / delete_schema()</TD></TR>
+            <TR><TD ALIGN="LEFT">+list_schema_ids()</TD></TR>
+            <TR><TD ALIGN="LEFT">+register_policy() / create_policy() / get_policy() / update_policy() / delete_policy()</TD></TR>
+            <TR><TD ALIGN="LEFT">+list_policy_ids()</TD></TR>
+            <TR><TD ALIGN="LEFT">+approve_runtime_profile() / create_runtime_profile() / get_runtime_profile()...</TD></TR>
+            <TR><TD ALIGN="LEFT">+create_production_profile() / get_production_profile() / activate_production_profile()...</TD></TR>
+            <TR><TD ALIGN="LEFT">+create/get/update/delete_provider_catalog_entry()</TD></TR>
+            <TR><TD ALIGN="LEFT">+create/get/update/delete_connection_catalog_entry()</TD></TR>
+            <TR><TD ALIGN="LEFT">+create/get/update/delete_persistence_catalog_entry()</TD></TR>
+            <TR><TD ALIGN="LEFT">+validate_provider_catalog_integrity()</TD></TR>
+            <TR><TD ALIGN="LEFT">+create/get/update/delete_configuration()</TD></TR>
+        </TABLE>
+    >];
+    
+    // ManagerialPort
+    ManagerialPort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#E8F5E9"><B>ManagerialPort</B> (Protocol)</TD></TR>
+            <TR><TD ALIGN="LEFT">+bind_adapter() / bind_container_assignment() / bind_execution_assignment()</TD></TR>
+            <TR><TD ALIGN="LEFT">+unbind_container_assignment() / unbind_execution_assignment()</TD></TR>
+            <TR><TD ALIGN="LEFT">+validate_container_assignment() / validate_execution_assignment()</TD></TR>
+            <TR><TD ALIGN="LEFT">+get_container_assignment_status() / get_execution_assignment_status()</TD></TR>
+            <TR><TD ALIGN="LEFT">+dispatch_round() / enforce_safepoint()</TD></TR>
+            <TR><TD ALIGN="LEFT">+collect_operational_evidence() / list_available_adapters()</TD></TR>
+            <TR><TD ALIGN="LEFT">+configure_*_policy() (8 policies)</TD></TR>
+            <TR><TD ALIGN="LEFT">+apply_configuration() / activate_production_profile()</TD></TR>
+            <TR><TD ALIGN="LEFT">+get_active_production_profile_id()</TD></TR>
+            <TR><TD ALIGN="LEFT">+bind_previewer_adapter()</TD></TR>
+        </TABLE>
+    >];
+    
+    // ConsumingPort
+    ConsumingPort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#FFF3E0"><B>ConsumingPort</B> (Protocol)</TD></TR>
+            <TR><TD ALIGN="LEFT">+submit_signal_or_request()</TD></TR>
+            <TR><TD ALIGN="LEFT">+query_projection() / query() / read_only_inspection()</TD></TR>
+            <TR><TD ALIGN="LEFT">+subscribe_notifications()</TD></TR>
+            <TR><TD ALIGN="LEFT">+emit() (backward compatible)</TD></TR>
+            <TR><TD ALIGN="LEFT">+log_debug() / log_info() / log_warn()</TD></TR>
+            <TR><TD ALIGN="LEFT">+log_error() / log_fatal() / log_trace()</TD></TR>
+        </TABLE>
+    >];
+    
+    // Other Ports
+    AdapterRegistryPort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#FCE4EC"><B>AdapterRegistryPort</B></TD></TR>
+            <TR><TD ALIGN="LEFT">+register()</TD></TR>
+            <TR><TD ALIGN="LEFT">+resolve()</TD></TR>
+            <TR><TD ALIGN="LEFT">+list_keys()</TD></TR>
+        </TABLE>
+    >];
+    
+    LogContainerProviderPort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#E1F5FE"><B>LogContainerProviderPort</B></TD></TR>
+            <TR><TD ALIGN="LEFT">+configure_retention()</TD></TR>
+            <TR><TD ALIGN="LEFT">+enqueue_pending() / drain_pending()</TD></TR>
+            <TR><TD ALIGN="LEFT">+commit_dispatched()</TD></TR>
+            <TR><TD ALIGN="LEFT">+list_dispatched_records()</TD></TR>
+            <TR><TD ALIGN="LEFT">+query_projection()</TD></TR>
+        </TABLE>
+    >];
+    
+    ResourceManagementClientPort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#F3E5F5"><B>ResourceManagementClientPort</B></TD></TR>
+            <TR><TD ALIGN="LEFT">+request_container_lease()</TD></TR>
+            <TR><TD ALIGN="LEFT">+validate_container_lease()</TD></TR>
+            <TR><TD ALIGN="LEFT">+request_execution_lease()</TD></TR>
+        </TABLE>
+    >];
+    
+    StateStorePort [label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#E0F2F1"><B>StateStorePort</B></TD></TR>
+            <TR><TD ALIGN="LEFT">+load() / save()</TD></TR>
+            <TR><TD ALIGN="LEFT">+exists()</TD></TR>
+        </TABLE>
+    >];
+    
+    // Layout
+    AdministrativePort -> LogContainerProviderPort [style=invis];
+    ManagerialPort -> ConsumingPort [style=invis];
+}

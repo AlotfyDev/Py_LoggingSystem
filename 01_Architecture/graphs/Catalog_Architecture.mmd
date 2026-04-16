@@ -1,0 +1,46 @@
+%% Catalog Architecture
+%% Mermaid format
+
+graph TB
+    subgraph "ProviderCatalogService"
+        PC[Provider Catalog<br/>Service]
+    end
+    
+    subgraph "Provider Entries"
+        PE1[provider.logging.local]
+        PE2[provider.logging.remote]
+        PE3[provider.telemetry.otel]
+    end
+    
+    subgraph "Connection Entries"
+        CE1[connection.local.file]
+        CE2[connection.remote.http]
+        CE3[connection.otel.grpc]
+    end
+    
+    subgraph "Persistence Entries"
+        PSE1[persistence.inmemory]
+        PSE2[persistence.file]
+        PSE3[persistence.database]
+    end
+    
+    subgraph "Integrity Validator"
+        IV[Catalog Integrity<br/>Validator]
+    end
+    
+    PC --> PE1
+    PC --> PE2
+    PC --> PE3
+    
+    PE1 --> CE1
+    PE2 --> CE2
+    PE3 --> CE3
+    
+    CE1 --> PSE1
+    CE2 --> PSE2
+    CE3 --> PSE3
+    
+    PC --> IV
+    
+    style PC fill:#E8F5E9
+    style IV fill:#FFCCBC

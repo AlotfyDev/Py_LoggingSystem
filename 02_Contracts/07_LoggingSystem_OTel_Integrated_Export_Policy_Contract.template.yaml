@@ -1,0 +1,79 @@
+contract:
+  contract_id: LOGSYS-C-007
+  contract_name: LoggingSystem_OTel_Integrated_Export_Policy_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze integrated OpenTelemetry export policy for logs, metrics, traces within adapter-only architecture boundaries.
+
+integration_topology:
+  canonical_flow: LoggingSystem -> OpenTelemetryAdapter -> OTelCollector -> (Loki + Prometheus + Tempo) -> Grafana
+  topology_rule: core_logging_service_must_not_bypass_collector
+
+otlp_capabilities:
+  required_signals:
+    - logs
+    - metrics
+    - traces
+  required_protocol_support:
+    - grpc
+    - http_protobuf
+
+mandatory_attributes_schema:
+  required_attributes:
+    - service
+    - subsystem
+    - tenant
+    - environment
+    - level
+    - correlation_id
+    - trace_id
+    - span_id
+  enforcement: fail_closed
+
+collector_unavailable_policy:
+  severity_matrix:
+    FATAL:
+      queue: required
+      retry: required
+      drop: forbidden
+    ERROR:
+      queue: required
+      retry: required
+      drop: forbidden
+    WARN:
+      queue: required
+      retry: required
+      drop: allowed_after_retry_budget
+    INFO:
+      queue: required
+      retry: required
+      drop: allowed_after_retry_budget
+    DEBUG:
+      queue: required
+      retry: required
+      drop: allowed_after_retry_budget
+    TRACE:
+      queue: required
+      retry: required
+      drop: allowed_after_retry_budget
+
+qos_by_signal:
+  logs: at_least_once
+  metrics: at_most_once
+  traces: at_most_once
+
+core_vendor_neutrality:
+  no_direct_vendor_sdk_in_core_service_layer: true
+  allowed_vendor_sdk_scope:
+    - adapters/
+
+depends_on:
+  - ./03_LoggingSystem_OpenTelemetry_Adapter_Boundary_Contract.template.yaml
+
+fail_closed_conditions:
+  - missing_required_signal_capability
+  - missing_required_attribute
+  - collector_unavailable_policy_missing
+  - qos_by_signal_missing_or_invalid
+  - collector_bypass_detected
+  - direct_vendor_sdk_dependency_detected_in_core

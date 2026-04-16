@@ -1,0 +1,47 @@
+contract:
+  contract_id: LOGSYS-C-010
+  contract_name: LoggingSystem_Specialized_Resolver_Pipelines_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze separated resolver pipelines (writer, dispatcher, read-only) and forbid collapsing into single shared resolver authority.
+
+resolver_architecture:
+  shared_reference_index_service_required: false
+  dedicated_role_resolver_pipelines_required: true
+  resolver_pipelines:
+    writer_resolver_pipeline:
+      responsibilities:
+        - resolve_write_target_container
+        - resolve_write_target_slot
+        - enforce_writer_authority_scope
+    dispatcher_resolver_pipeline:
+      responsibilities:
+        - resolve_dispatch_candidate_slot
+        - resolve_dispatch_receiver_binding
+        - enforce_dispatch_round_binding
+    readonly_resolver_pipeline:
+      responsibilities:
+        - resolve_query_projection_scope
+        - resolve_read_consistency_view
+        - enforce_readonly_authority_scope
+
+cross_pipeline_rules:
+  - writer_pipeline_must_not_dispatch
+  - dispatcher_pipeline_must_not_write_mutation
+  - readonly_pipeline_must_not_mutate_state
+  - cross_pipeline_access_requires_explicit_handoff_event
+
+handoff_contract:
+  required_handoff_fields:
+    - handoff_id
+    - from_pipeline
+    - to_pipeline
+    - slot_or_record_ref
+    - reason
+    - timestamp_utc
+
+fail_closed_conditions:
+  - shared_resolver_declared_as_authority
+  - missing_role_resolver_pipeline
+  - pipeline_responsibility_violation
+  - missing_handoff_evidence_for_cross_pipeline_operation

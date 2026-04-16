@@ -1,0 +1,83 @@
+contract:
+  contract_id: LOGSYS-C-005
+  contract_name: LoggingSystem_Default_ContentSchema_Catalog_Contract
+  version: 1.0.0
+  status: active
+  owner_scope: subsystem
+  owner_entity: <logging_system_owner>
+  intent: Freeze default log content schema catalog entries and require runtime validation against registered schemas.
+
+catalog_policy:
+  runtime_gate: fail_closed
+  default_active_schema_id: log.content.default.v1
+  required_validation_surface:
+    - consuming_port.emit
+    - consuming_port.submit_signal_or_request
+  schema_registration_rules:
+    - schema_payload_must_include_required_keys
+    - schema_payload_must_include_properties
+    - every_required_key_must_have_property_definition
+    - property_type_must_be_supported
+
+default_content_schema_catalog_entries:
+  - schema_id: log.content.default.v1
+    schema_name: DefaultLogContentSchema
+    required_keys: [level, message, attributes, context]
+    allow_additional_properties: true
+    properties:
+      level:
+        type: string
+        enum: [DEBUG, INFO, WARN, ERROR, FATAL, TRACE]
+      message:
+        type: string
+        min_length: 1
+      attributes:
+        type: object
+      context:
+        type: object
+  - schema_id: log.content.audit.v1
+    schema_name: AuditLogContentSchema
+    required_keys: [level, message, attributes, context, actor_id, action]
+    allow_additional_properties: true
+    properties:
+      level:
+        type: string
+        enum: [INFO, WARN, ERROR]
+      message:
+        type: string
+        min_length: 1
+      attributes:
+        type: object
+      context:
+        type: object
+      actor_id:
+        type: string
+        min_length: 1
+      action:
+        type: string
+        min_length: 1
+  - schema_id: log.content.error.v1
+    schema_name: ErrorLogContentSchema
+    required_keys: [level, message, attributes, context, error_code]
+    allow_additional_properties: true
+    properties:
+      level:
+        type: string
+        enum: [ERROR, FATAL]
+      message:
+        type: string
+        min_length: 1
+      attributes:
+        type: object
+      context:
+        type: object
+      error_code:
+        type: string
+        min_length: 1
+
+fail_closed_conditions:
+  - missing_default_schema_catalog_entries
+  - unresolved_active_content_schema
+  - schema_payload_structure_invalid
+  - payload_misses_required_schema_key
+  - payload_property_type_mismatch

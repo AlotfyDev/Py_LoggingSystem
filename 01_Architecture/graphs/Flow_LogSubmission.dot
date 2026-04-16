@@ -1,0 +1,44 @@
+// Flow: Log Submission Sequence
+// Graphviz DOT format
+
+digraph Flow_LogSubmission {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+    
+    // Participants
+    U [label="User/API", shape=ellipse, style=filled, fillcolor="#E3F2FD"];
+    LS [label="LoggingService", shape=ellipse, style=filled, fillcolor="#E8F5E9"];
+    LLH [label="LogLevelHandler", shape=ellipse, style=filled, fillcolor="#FFF3E0"];
+    LC [label="LevelContainers", shape=ellipse, style=filled, fillcolor="#E1F5FE"];
+    WRP [label="WriterResolverPipeline", shape=ellipse, style=filled, fillcolor="#FCE4EC"];
+    AR [label="AdapterRegistry", shape=ellipse, style=filled, fillcolor="#F3E5F5"];
+    LCMS [label="LogContainerModule", shape=ellipse, style=filled, fillcolor="#E0F2F1"];
+    AD [label="Adapter", shape=ellipse, style=filled, fillcolor="#FFCCBC"];
+    
+    // Sequence steps
+    U -> LS [label="log_info(message, attrs, ctx)"];
+    LS -> LLH [label="emit(level, message, attrs, ctx)"];
+    
+    LLH -> LLH [label="normalize_envelope()", style=dashed, color="#1976D2"];
+    LLH -> LLH [label="apply_schema_validation()", style=dashed, color="#388E3C"];
+    
+    LLH -> LS [label="emit_callable(payload, ctx)"];
+    LS -> LCMS [label="enqueue_pending(record)"];
+    LCMS -> LC [label="add_record(level, record_id, ctx)"];
+    
+    LLH -> LC [label="route_to_level_container()", style=dashed];
+    LLH -> WRP [label="publish_dispatch_event()", style=dashed];
+    
+    LS -> AR [label="resolve(active_adapter_key)"];
+    AR -> LS [label="adapter"];
+    LS -> AD [label="emit_signal(record)"];
+    
+    // Step numbering
+    1 [label="1. Submit", shape=none, fontsize=8];
+    2 [label="2. Normalize", shape=none, fontsize=8];
+    3 [label="3. Validate", shape=none, fontsize=8];
+    4 [label="4. Enqueue", shape=none, fontsize=8];
+    5 [label="5. Route", shape=none, fontsize=8];
+    6 [label="6. Dispatch", shape=none, fontsize=8];
+}

@@ -1,0 +1,95 @@
+contract:
+  contract_id: LOGSYS-C-019
+  contract_name: LoggingSystem_Persistence_Catalog_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze persistence catalog SSOT for durability/replay/retention/compaction and consistency-ack compatibility.
+
+catalog_model:
+  catalog_id: LOGSYS_PERSISTENCE_CATALOG
+  required_fields:
+    - persistence_profile_id
+    - provider_id
+    - durability_level
+    - replay_capability
+    - retention_capability
+    - compaction_capability
+    - consistency_model
+    - ack_semantics
+    - execution_plane_relation
+    - backend_execution_scope
+    - backup_restore_support
+    - eviction_policy_compatibility
+    - fail_closed_conditions
+
+seed_entries:
+  - persistence_profile_id: persistence.local.volatile
+    provider_id: provider.local.inmemory.level_containers
+    durability_level: volatile_memory
+    replay_capability: none
+    retention_capability:
+      mode: bounded_queue
+      max_records_required: true
+      max_age_seconds_optional: true
+    compaction_capability:
+      supported: false
+    consistency_model: inprocess_single_writer
+    ack_semantics: inprocess_commit
+    execution_plane_relation: orthogonal_explicit_binding
+    backend_execution_scope: persistence_backend
+    backup_restore_support:
+      snapshot_export: optional
+      restore: optional
+    eviction_policy_compatibility:
+      - drop_oldest
+      - size_bound_enforced
+    fail_closed_conditions:
+      - persistence_profile_requires_durability_but_is_volatile
+
+  - persistence_profile_id: persistence.redis.aof
+    provider_id: provider.redis.streams
+    durability_level: durable_append_only
+    replay_capability: stream_replay_with_offsets
+    retention_capability:
+      mode: stream_trim_policy
+      max_len_required: true
+      max_age_seconds_optional: true
+    compaction_capability:
+      supported: true
+      strategy: stream_trim
+    consistency_model: distributed_eventual_with_ack
+    ack_semantics: consumer_group_ack
+    execution_plane_relation: orthogonal_explicit_binding
+    backend_execution_scope: persistence_backend
+    backup_restore_support:
+      snapshot_export: supported
+      restore: supported
+    eviction_policy_compatibility:
+      - trim_by_length
+      - trim_by_age
+    fail_closed_conditions:
+      - ack_model_mismatch_with_provider
+      - durability_required_but_aof_disabled
+
+catalog_rules:
+  persistence_profile_provider_id_must_match_provider_catalog: true
+  ack_semantics_must_be_compatible_with_provider_ack_model: true
+  durability_replay_retention_must_satisfy_selected_qos: true
+  backup_restore_policy_must_be_explicit_for_durable_profiles: true
+  persistence_execution_plane_must_remain_orthogonal: true
+
+runtime_module_boundary:
+  module_root: 03_DigitalTwin/logging_system/provider_catalogs
+  required_components:
+    - provider_catalogs/models.py
+    - provider_catalogs/service.py
+  separation_rules:
+    - persistence_catalog_entries_must_be_managed_in_provider_catalogs_module
+    - direct_persistence_catalog_mutation_outside_provider_catalogs_module_forbidden
+
+fail_closed_conditions:
+  - persistence_profile_missing_required_field
+  - persistence_profile_provider_id_not_found
+  - persistence_ack_semantics_incompatible_with_provider
+  - durable_profile_without_backup_restore_definition
+  - persistence_execution_plane_not_explicitly_bound

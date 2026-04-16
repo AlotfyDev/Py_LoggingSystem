@@ -1,0 +1,43 @@
+contract:
+  contract_id: LOGSYS-C-016
+  contract_name: LoggingSystem_ResourceManagementClient_LeaseBinding_Contract
+  version: 1.0.0
+  status: active
+  intent: Freeze container resource lease binding model between LoggingSystem and external ResourceManagement clients.
+
+depends_on:
+  - ./02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+  - ./15_LoggingSystem_LogContainerModule_Boundary_Contract.template.yaml
+
+resource_management_client_boundary:
+  provider_port_required: resource_management_client_port
+  required_functions:
+    - request_container_lease
+    - validate_container_lease
+    - get_container_lease
+    - release_container_lease
+
+container_assignment_surface:
+  managerial_capabilities:
+    - bind_container_assignment
+    - unbind_container_assignment
+    - validate_container_assignment
+    - get_container_assignment_status
+  assignment_fields:
+    - container_binding_id
+    - container_backend_profile_id
+    - container_lease_id
+
+dispatch_gate_rules:
+  dispatch_requires_valid_container_assignment: true
+  dispatch_requires_valid_container_lease: true
+  fallback_policy:
+    allow_unbound_dispatch_fallback_default: false
+    fallback_requires_explicit_policy_flag: true
+
+fail_closed_conditions:
+  - dispatch_without_container_assignment
+  - dispatch_with_invalid_or_expired_container_lease
+  - missing_container_backend_profile_id
+  - missing_resource_management_client_binding
+  - unbind_without_existing_assignment

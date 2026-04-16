@@ -1,0 +1,132 @@
+contract:
+  contract_id: LOGSYS-C-003
+  contract_name: LoggingSystem_OpenTelemetry_Adapter_Boundary_Contract
+  version: 1.1.0
+  status: active
+  intent: Freeze OpenTelemetry integration as adapter boundary while keeping core subsystem vendor-agnostic.
+
+architecture_statement:
+  - core_is_vendor_agnostic
+  - opentelemetry_integration_is_adapter_based
+  - capability_profile_drives_compatibility_not_hardcoded_backends
+
+adapter_profiles:
+  primary_profile: opentelemetry
+  supported_profiles:
+    - opentelemetry
+    - stdlib_fallback_or_noop
+  target_signal_domain:
+    - logs
+    - metrics
+    - traces
+
+otlp_capability_requirements:
+  required_signal_capabilities:
+    logs:
+      otlp_required: true
+      accepted_qos:
+        - at_least_once
+        - at_most_once
+    metrics:
+      otlp_required: true
+      accepted_qos:
+        - at_most_once
+        - at_least_once
+    traces:
+      otlp_required: true
+      accepted_qos:
+        - at_most_once
+        - at_least_once
+  required_transport_support:
+    - grpc
+    - http_protobuf
+
+required_adapter_ports:
+  - telemetry_adapter_registry_port
+  - telemetry_adapter_resolver_port
+  - telemetry_emit_port
+
+required_capability_fields:
+  - adapter_key
+  - otel_semconv_profile
+  - propagation_format
+  - failure_mode
+  - signal_capabilities
+  - qos_by_signal
+
+mandatory_label_attribute_schema:
+  required_keys:
+    - service
+    - subsystem
+    - tenant
+    - environment
+    - level
+    - correlation_id
+    - trace_id
+    - span_id
+  enforcement_mode: fail_closed_on_missing_required_key
+
+collector_unavailable_fail_closed_policy:
+  severity_policies:
+    FATAL:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_exponential_backoff
+      drop_policy: forbidden
+    ERROR:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_exponential_backoff
+      drop_policy: forbidden
+    WARN:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_linear_backoff
+      drop_policy: allowed_after_retry_budget
+    INFO:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_linear_backoff
+      drop_policy: allowed_after_retry_budget
+    DEBUG:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_linear_backoff
+      drop_policy: allowed_after_retry_budget
+    TRACE:
+      queue_policy: queue_then_retry
+      retry_policy: bounded_linear_backoff
+      drop_policy: allowed_after_retry_budget
+
+pipeline_qos_policy:
+  qos_by_signal:
+    logs: at_least_once
+    metrics: at_most_once
+    traces: at_most_once
+  rationale:
+    - logs_prioritize_durability_for_operational_forensics
+    - metrics_prioritize_low_overhead_and_timeliness
+    - traces_prioritize_sampling_and_latency_budget
+
+core_layer_vendor_neutrality:
+  rule: no_direct_vendor_sdk_dependencies_in_core_service_layer
+  core_forbidden_import_prefixes:
+    - opentelemetry
+    - prometheus_client
+    - grafana
+    - loki
+    - tempo
+  allowed_vendor_sdk_scope:
+    - adapters/
+
+failure_modes:
+  - adapter_unavailable
+  - capability_mismatch
+  - export_backpressure
+  - propagation_context_invalid
+
+fail_closed_conditions:
+  - missing_adapter_profile
+  - missing_required_adapter_port
+  - unresolved_adapter_key
+  - capability_profile_incomplete
+  - missing_otlp_signal_capability
+  - missing_required_label_attribute
+  - missing_collector_unavailable_policy
+  - missing_qos_by_signal
+  - core_vendor_sdk_dependency_detected

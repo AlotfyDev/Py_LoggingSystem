@@ -1,0 +1,48 @@
+%% Data Flow Pipeline
+%% Mermaid format
+
+flowchart LR
+    subgraph Input
+        CLI[CLI] 
+        API[Level API<br/>log_info, etc.]
+    end
+    
+    subgraph Processing
+        LS[LoggingService]
+        LLH[LogLevelHandler]
+        VAL[Validation]
+        NORM[Normalization]
+    end
+    
+    subgraph Storage
+        LCMS[LogContainerModule]
+        LVC[LevelContainers]
+        SLC[SlotLifecycle]
+    end
+    
+    subgraph Resolution
+        WRP[WriterResolver]
+        DRP[DispatcherResolver]
+    end
+    
+    subgraph Output
+        AR[AdapterRegistry]
+        OTA[OpenTelemetry]
+        NOA[NoOp]
+        OVA[Viewer]
+    end
+    
+    CLI --> LS
+    API --> LS
+    LS --> LLH
+    LLH --> VAL
+    VAL --> NORM
+    NORM --> LCMS
+    LCMS --> LVC
+    LCMS --> SLC
+    LVC --> WRP
+    WRP --> DRP
+    DRP --> AR
+    AR --> OTA
+    AR --> NOA
+    AR --> OVA

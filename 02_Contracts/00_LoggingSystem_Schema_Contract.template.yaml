@@ -1,0 +1,50 @@
+contract:
+  contract_id: LOGSYS-C-000
+  contract_name: LoggingSystem_Schema_Contract
+  version: 1.9.0
+  status: active
+  owner_scope: subsystem
+  owner_entity: <logging_owner>
+  intent: Freeze subsystem identity, scope, and mandatory governance boundaries.
+
+subsystem_identity:
+  subsystem_id: LOGSYS
+  domain: logging
+  primary_provider_port: logging_port
+  portability_mode: injectable_portable
+
+mandatory_governance:
+  functional_levels:
+    - administrative
+    - managerial
+    - consuming
+  mandatory_contracts:
+    - ./01_LoggingSystem_Templated_Types_And_Functions_Contract.template.yaml
+    - ./02_LoggingSystem_Admin_Manager_Consumer_Ports_Contract.template.yaml
+    - ./03_LoggingSystem_OpenTelemetry_Adapter_Boundary_Contract.template.yaml
+    - ./06_LoggingSystem_Component_Classification_And_SpecializedPipelines_Contract.template.yaml
+    - ./07_LoggingSystem_OTel_Integrated_Export_Policy_Contract.template.yaml
+    - ./09_LoggingSystem_LevelContainers_And_SlotLifecycle_Contract.template.yaml
+    - ./10_LoggingSystem_Specialized_Resolver_Pipelines_Contract.template.yaml
+    - ./11_LoggingSystem_Dedicated_LogLevel_API_Objects_Contract.template.yaml
+    - ./12_LoggingSystem_CLI_Command_Surface_Contract.template.yaml
+    - ./14_LoggingSystem_Configuration_Surface_Contract.template.yaml
+    - ./15_LoggingSystem_LogContainerModule_Boundary_Contract.template.yaml
+    - ./16_LoggingSystem_ResourceManagementClient_LeaseBinding_Contract.template.yaml
+    - ./17_LoggingSystem_LogContainerProvider_Catalog_Contract.template.yaml
+    - ./18_LoggingSystem_Connections_Catalog_Contract.template.yaml
+    - ./19_LoggingSystem_Persistence_Catalog_Contract.template.yaml
+    - ./20_LoggingSystem_ClientSide_Ports_Adapters_Injection_Contract.template.yaml
+    - ./21_LoggingSystem_Catalog_Integrity_Validator_Gate_Contract.template.yaml
+    - ./22_LoggingSystem_ExecutionPool_Client_LeaseBinding_Contract.template.yaml
+    - ./23_LoggingSystem_Threading_Scheduling_Backpressure_Contract.template.yaml
+    - ./04_LoggingSystem_ArchitectureDigitalTwin_Filesystem_Contract.template.yaml
+    - ./05_LoggingSystem_Default_ContentSchema_Catalog_Contract.template.yaml
+  optional_profile_contracts:
+    - ./08_LoggingSystem_LoggerPreviewer_Profile_Contract.template.yaml
+    - ./13_LoggingSystem_ObservabilityViewer_SpecializationPack_Contract.template.yaml
+
+fail_closed_conditions:
+  - missing_primary_provider_port
+  - missing_functional_level_surface
+  - direct_peer_internal_dependency_detected

@@ -1,0 +1,75 @@
+%% System Overview Block Diagram
+%% Mermaid format for GitHub/GitLab rendering
+
+graph TB
+    subgraph "User/API Layer"
+        CLI[CLI Interface]
+        LEVEL[Level API<br/>log_info, log_debug, etc.]
+    end
+
+    subgraph "Layer 3: Services (Stateful)"
+        LS[LoggingService]
+        CCS[ConfiguratorService]
+        PC[ProviderCatalogService]
+        PP[ProductionProfileCatalogService]
+        LCMS[LogContainerModuleService]
+    end
+
+    subgraph "Layer 2: Ports (Interfaces)"
+        ADMIN[AdministrativePort]
+        MGR[ManagerialPort]
+        CONS[ConsumingPort]
+        LCADMIN[LogContainerAdminPort]
+        LCCONS[LogContainerConsumingPort]
+        LCPROV[LogContainerProviderPort]
+    end
+
+    subgraph "Layer 1: Models (PODs)"
+        LR[LogRecord]
+        LE[LogEnvelope]
+        SCH[Schema Catalog]
+    end
+
+    subgraph "Layer 4: Composables"
+        subgraph "Adapters"
+            OTA[OpenTelemetryAdapter]
+            NOA[NoOpAdapter]
+            OVA[ObservabilityViewerAdapter]
+        end
+        
+        subgraph "Resolvers"
+            WRP[WriterResolverPipeline]
+            DRP[DispatcherResolverPipeline]
+            RORP[ReadOnlyResolverPipeline]
+        end
+        
+        subgraph "Containers"
+            LVC[LevelContainers]
+            SLC[SlotLifecycle]
+        end
+        
+        subgraph "Handlers"
+            LLH[LogLevelHandler]
+        end
+        
+        AR[AdapterRegistry]
+    end
+
+    LEVEL --> LS
+    CLI --> LS
+    LS --> ADMIN
+    LS --> MGR
+    LS --> CONS
+    LS --> LCMS
+    LCMS --> LVC
+    LCMS --> SLC
+    LS --> AR
+    AR --> OTA
+    AR --> NOA
+    AR --> OVA
+    LS --> WRP
+    LS --> DRP
+    LS --> RORP
+    LS --> CCS
+    CCS --> PC
+    CCS --> PP

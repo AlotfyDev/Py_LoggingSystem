@@ -1,0 +1,35 @@
+%% Flow: Profile Activation Sequence
+%% Mermaid format
+
+sequenceDiagram
+    participant U as User
+    participant LS as LoggingService
+    participant PC as ProviderCatalogService
+    participant PP as ProductionProfileCatalogService
+    participant CCS as ConfiguratorService
+    
+    U->>LS: activate_production_profile(profile_id)
+    
+    rect rgb(255, 243, 224)
+        Note over LS: Validate Profile
+        LS->>PP: get_profile(profile_id)
+        PP-->>LS: profile
+        LS->>PP: validate_integrity()
+    end
+    
+    rect rgb(224, 242, 255)
+        Note over LS: Extract Bindings
+        LS->>LS: extract container_binding_id, execution_binding_id, adapter_key
+    end
+    
+    rect rgb(240, 248, 255)
+        Note over LS: Apply Bindings
+        LS->>LS: bind_container_assignment()
+        LS->>LS: bind_execution_assignment()
+        LS->>LS: bind_adapter(adapter_key)
+    end
+    
+    LS->>PC: validate_provider_catalog_integrity()
+    
+    LS->>LS: _active_production_profile_id = profile_id
+    LS-->>U: {profile_id, container_assignment, execution_assignment, adapter_key}
