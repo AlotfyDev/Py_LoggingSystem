@@ -204,7 +204,8 @@ class HistogramValue(MetricValue):
 
     def percentile(self, p: float) -> Optional[float]:
         """
-        Calculate the percentile value from the histogram.
+        Calculate the percentile value from the histogram using linear interpolation.
+        Bucket counts are cumulative.
 
         Args:
             p: Percentile to calculate (0.0 to 100.0)
@@ -215,18 +216,63 @@ class HistogramValue(MetricValue):
         if self.count == 0 or not (0 <= p <= 100):
             return None
 
+        if self.count == 1:
+            return self.sum  # Only one observation
+
         # Find the bucket that contains the percentile
         target_count = (p / 100.0) * self.count
-        cumulative_count = 0
 
-        for i, count in enumerate(self.bucket_counts):
-            cumulative_count += count
+        # bucket_counts are cumulative, so find first i where bucket_counts[i] >= target_count
+        for i, cumulative_count in enumerate(self.bucket_counts):
             if cumulative_count >= target_count:
+                # Found the bucket containing our percentile
                 if i == 0:
-                    return self.min
-                elif i <= len(self.buckets):
-                    return self.buckets[i - 1]
-                else:
-                    return self.max
+                    # In the first bucket (≤ buckets[0])
+                    if cumulative_count == 0:
+                        return self.min if self.min is not None else 0.0
 
+                    # Linear interpolation within first bucket [0, buckets[0]]
+                    bucket_start = 0.0
+                    bucket_end = self.buckets[0]
+                    prev_cumulative = 0
+                    bucket_observations = cumulative_count - prev_cumulative
+
+                    if bucket_observations == 0:
+                        return bucket_start
+
+                    fraction = (target_count - prev_cumulative) / bucket_observations
+                    return bucket_start + fraction * (bucket_end - bucket_start)
+
+                elif i < len(self.buckets):
+                    # In a middle bucket (buckets[i-1], buckets[i]]
+                    bucket_start = self.buckets[i-1]
+                    bucket_end = self.buckets[i]
+                    prev_cumulative = self.bucket_counts[i-1] if i > 0 else 0
+                    bucket_observations = cumulative_count - prev_cumulative
+
+                    if bucket_observations == 0:
+                        return bucket_start
+
+                    # Linear interpolation within bucket
+                    fraction = (target_count - prev_cumulative) / bucket_observations
+                    return bucket_start + fraction * (bucket_end - bucket_start)
+
+                else:
+                    # In the last bucket (> buckets[-1])
+                    bucket_start = self.buckets[-1]
+                    # For the last bucket, we don't know the upper bound
+                    # Use linear interpolation assuming uniform distribution up to max
+                    prev_cumulative = self.bucket_counts[-2] if len(self.bucket_counts) > 1 else 0
+                    bucket_observations = cumulative_count - prev_cumulative
+
+                    if bucket_observations == 0:
+                        return bucket_start
+
+                    # Estimate position within last bucket
+                    fraction = (target_count - prev_cumulative) / bucket_observations
+                    # Interpolate between bucket_start and max (or estimate)
+                    bucket_end = max(self.max or bucket_start, bucket_start + 1.0)  # Conservative estimate
+                    return bucket_start + fraction * (bucket_end - bucket_start)
+
+        # Fallback: should not reach here in normal cases
         return self.max

@@ -6,7 +6,7 @@ APIs for recording metrics, while internally using the metric registry.
 """
 
 import threading
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from .registry import MetricRegistry
 from .types import EMetricType, MetricMetadata
@@ -43,14 +43,8 @@ class Counter:
         self._default_labels = labels or {}
         self._registry = MetricRegistry.get_instance()
 
-        # Create the initial metric in the registry
-        self._registry.counter(
-            name=name,
-            description=description,
-            unit=unit,
-            labels=self._default_labels,
-            initial_value=0
-        )
+        # Note: Counter is lazily initialized on first increment() call
+        # This avoids creating empty counters in the registry
 
     def increment(self, amount: int = 1, labels: Optional[Dict[str, str]] = None) -> None:
         """
@@ -77,7 +71,7 @@ class Counter:
             description=self._description,
             unit=self._unit,
             labels=merged_labels,
-            initial_value=amount  # This will increment existing counter
+            initial_value=amount
         )
 
     def get_value(self, labels: Optional[Dict[str, str]] = None) -> int:
@@ -263,3 +257,130 @@ class Gauge:
     def unit(self) -> Optional[str]:
         """Get the metric unit."""
         return self._unit
+
+
+class Histogram:
+    """
+    Histogram instrument for recording value distributions.
+
+    Histograms track the distribution of values, including count, sum,
+    and bucketed counts for percentile calculations. They are typically
+    used for measuring latencies, request sizes, or other distributions.
+
+    This instrument provides a convenient API while internally using
+    the metric registry for storage and thread safety.
+    """
+
+    # Default bucket boundaries following Prometheus conventions
+    DEFAULT_BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
+
+    def __init__(self,
+                 name: str,
+                 description: str = "",
+                 unit: Optional[str] = None,
+                 labels: Optional[Dict[str, str]] = None,
+                 buckets: Optional[List[float]] = None):
+        """
+        Initialize a histogram instrument.
+
+        Args:
+            name: Metric name (must be unique)
+            description: Human-readable description
+            unit: Unit of measurement (e.g., "seconds", "bytes")
+            labels: Default labels to apply to all measurements
+            buckets: Bucket boundaries (default: standard Prometheus buckets)
+        """
+        self._name = name
+        self._description = description
+        self._unit = unit
+        self._default_labels = labels or {}
+        self._buckets = buckets or self.DEFAULT_BUCKETS.copy()
+        self._registry = MetricRegistry.get_instance()
+
+        # Validate buckets are sorted
+        if self._buckets != sorted(self._buckets):
+            raise ValueError("Histogram buckets must be sorted in ascending order")
+
+        # Note: Histogram is lazily initialized on first observe() call
+        # This avoids creating empty histograms in the registry
+
+    def observe(self, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Observe a value in the histogram.
+
+        Args:
+            value: Value to observe
+            labels: Additional labels to merge with default labels
+        """
+        # Merge default labels with provided labels
+        merged_labels = {**self._default_labels}
+        if labels:
+            merged_labels.update(labels)
+
+        # Use registry to observe value in histogram
+        # Registry handles initialization on first observation
+        self._registry.histogram_observe(
+            name=self._name,
+            value=value,
+            buckets=self._buckets,
+            description=self._description,
+            unit=self._unit,
+            labels=merged_labels
+        )
+
+    def get_summary(self, labels: Optional[Dict[str, str]] = None) -> Optional[Dict[str, any]]:
+        """
+        Get a summary of the histogram data.
+
+        Note: This method is primarily for testing. In production,
+        metrics are typically collected via the registry's collect() method.
+
+        Args:
+            labels: Labels to identify the specific histogram instance
+
+        Returns:
+            Dictionary with histogram summary or None if not found
+        """
+        merged_labels = {**self._default_labels}
+        if labels:
+            merged_labels.update(labels)
+
+        # Find matching metric in registry
+        for metric in self._registry.collect():
+            if (metric.metadata.name == self._name and
+                metric.metadata.labels == merged_labels and
+                hasattr(metric, 'buckets')):  # HistogramValue
+                return {
+                    'count': metric.count,
+                    'sum': metric.sum,
+                    'min': metric.min,
+                    'max': metric.max,
+                    'average': metric.sum / metric.count if metric.count > 0 else 0,
+                    'buckets': metric.buckets,
+                    'bucket_counts': metric.bucket_counts,
+                    'p50': metric.percentile(50.0),
+                    'p95': metric.percentile(95.0),
+                    'p99': metric.percentile(99.0)
+                }
+
+        return None  # Not found
+
+    @property
+    def name(self) -> str:
+        """Get the metric name."""
+        return self._name
+
+    @property
+    def description(self) -> str:
+        """Get the metric description."""
+        return self._description
+
+    @property
+    def unit(self) -> Optional[str]:
+        """Get the metric unit."""
+        return self._unit
+
+    @property
+    def buckets(self) -> List[float]:
+        """Get the histogram bucket boundaries."""
+        return self._buckets.copy()

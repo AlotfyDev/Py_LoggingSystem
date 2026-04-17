@@ -5,7 +5,7 @@ This module provides metric collection, storage, and export capabilities
 following OpenTelemetry and Prometheus patterns.
 """
 
-from .instruments import Counter, Gauge
+from .instruments import Counter, Gauge, Histogram
 from .registry import (
     MetricRegistry,
     counter,

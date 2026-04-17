@@ -39,6 +39,25 @@ class MetricRegistry:
         self._metrics: Dict[str, MetricValue] = {}
         self._registry_lock = threading.RLock()
 
+    def _get_metric_key(self, name: str, labels: Optional[Dict[str, str]] = None) -> str:
+        """
+        Generate a unique key for a metric based on name and labels.
+
+        Args:
+            name: Metric name
+            labels: Metric labels
+
+        Returns:
+            Unique key for the metric
+        """
+        if not labels:
+            return name
+
+        # Sort labels for consistent key generation
+        sorted_labels = sorted(labels.items())
+        label_str = ",".join(f"{k}={v}" for k, v in sorted_labels)
+        return f"{name}{{{label_str}}}"
+
     @classmethod
     def get_instance(cls) -> 'MetricRegistry':
         """
@@ -90,10 +109,12 @@ class MetricRegistry:
             labels=labels
         )
 
+        key = self._get_metric_key(name, labels)
+
         with self._registry_lock:
-            if name in self._metrics:
+            if key in self._metrics:
                 # Update existing counter
-                existing = self._metrics[name]
+                existing = self._metrics[key]
                 if isinstance(existing, CounterValue):
                     # For existing counters, increment by initial_value if > 0, otherwise return existing
                     if initial_value > 0:
@@ -103,12 +124,12 @@ class MetricRegistry:
                             timestamp=self._get_current_timestamp(),
                             value=new_value
                         )
-                        self._metrics[name] = updated_counter
+                        self._metrics[key] = updated_counter
                         return updated_counter
                     else:
                         return existing
                 else:
-                    raise ValueError(f"Metric '{name}' already exists with different type")
+                    raise ValueError(f"Metric '{key}' already exists with different type")
 
             # Create new counter
             counter = CounterValue(
@@ -116,7 +137,7 @@ class MetricRegistry:
                 timestamp=self._get_current_timestamp(),
                 value=initial_value
             )
-            self._metrics[name] = counter
+            self._metrics[key] = counter
             return counter
 
     def gauge_set(
@@ -150,13 +171,15 @@ class MetricRegistry:
             labels=labels
         )
 
+        key = self._get_metric_key(name, labels)
+
         with self._registry_lock:
             gauge = GaugeValue(
                 metadata=metadata,
                 timestamp=self._get_current_timestamp(),
                 value=value
             )
-            self._metrics[name] = gauge
+            self._metrics[key] = gauge
             return gauge
 
     def gauge_inc(
@@ -180,15 +203,17 @@ class MetricRegistry:
         Returns:
             GaugeValue: The updated gauge metric value
         """
+        key = self._get_metric_key(name, labels)
+
         with self._registry_lock:
-            if name in self._metrics:
-                existing = self._metrics[name]
+            if key in self._metrics:
+                existing = self._metrics[key]
                 if isinstance(existing, GaugeValue):
-                    new_value = existing.update(existing.value + amount)
-                    self._metrics[name] = new_value
-                    return new_value
+                    new_gauge = existing.update(existing.value + amount)
+                    self._metrics[key] = new_gauge
+                    return new_gauge
                 else:
-                    raise ValueError(f"Metric '{name}' already exists with different type")
+                    raise ValueError(f"Metric '{key}' already exists with different type")
 
             # Create new gauge with the increment amount
             metadata = MetricMetadata(
@@ -204,7 +229,7 @@ class MetricRegistry:
                 timestamp=self._get_current_timestamp(),
                 value=amount
             )
-            self._metrics[name] = gauge
+            self._metrics[key] = gauge
             return gauge
 
     def histogram_observe(
@@ -241,18 +266,20 @@ class MetricRegistry:
             labels=labels
         )
 
+        key = self._get_metric_key(name, labels)
+
         with self._registry_lock:
-            if name in self._metrics:
-                existing = self._metrics[name]
+            if key in self._metrics:
+                existing = self._metrics[key]
                 if isinstance(existing, HistogramValue):
                     # Verify bucket configuration matches
                     if existing.buckets != buckets:
-                        raise ValueError(f"Histogram '{name}' bucket configuration mismatch")
+                        raise ValueError(f"Histogram '{key}' bucket configuration mismatch")
                     new_histogram = existing.observe(value)
-                    self._metrics[name] = new_histogram
+                    self._metrics[key] = new_histogram
                     return new_histogram
                 else:
-                    raise ValueError(f"Metric '{name}' already exists with different type")
+                    raise ValueError(f"Metric '{key}' already exists with different type")
 
             # Create new histogram
             histogram = HistogramValue(
@@ -266,7 +293,7 @@ class MetricRegistry:
             )
             # Observe the first value
             histogram = histogram.observe(value)
-            self._metrics[name] = histogram
+            self._metrics[key] = histogram
             return histogram
 
     def collect(self) -> List[MetricValue]:
