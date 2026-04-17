@@ -15,6 +15,7 @@ class TestFileBasedDLQPersistence:
             file_path = Path(tmpdir) / "dlq.jsonl"
             dlq = FileBasedDeadLetterQueue(file_path=file_path)
             entry = dlq.add("ERROR1", "Test message", {"key": "value"})
+            dlq.flush()
 
             dlq2 = FileBasedDeadLetterQueue(file_path=file_path)
             retrieved = dlq2.get(entry.entry_id)
@@ -31,6 +32,7 @@ class TestFileBasedDLQPersistence:
             assert len(dlq) == 0
 
             entry = dlq.add("ERROR", "After corruption", None)
+            dlq.flush()
             assert entry is not None
             assert len(dlq) == 1
 
@@ -44,6 +46,7 @@ class TestFileBasedDLQPersistence:
             time.sleep(1.1)
 
             dlq.add("ERROR2", "New", None)
+            dlq.flush()
             assert len(dlq) == 2
 
             purged = dlq.purge_expired(ttl_seconds=1)
@@ -75,6 +78,7 @@ class TestFileBasedDLQPersistence:
             dlq = FileBasedDeadLetterQueue(file_path=file_path)
             dlq.add("ERROR1", "Test1", None)
             dlq.add("ERROR2", "Test2", None)
+            dlq.flush()
             assert len(dlq) == 2
 
             count = dlq.clear()
@@ -90,6 +94,7 @@ class TestFileBasedDLQAtomicWrite:
             dlq = FileBasedDeadLetterQueue(file_path=file_path)
 
             dlq.add("ERROR", "Test", None)
+            dlq.flush()
             assert file_path.exists()
 
             with open(file_path, "r", encoding="utf-8") as f:
@@ -102,8 +107,10 @@ class TestFileBasedDLQAtomicWrite:
             file_path = Path(tmpdir) / "dlq.jsonl"
             dlq = FileBasedDeadLetterQueue(file_path=file_path)
             entry = dlq.add("ERROR", "Test", None)
+            dlq.flush()
 
             dlq.retry(entry.entry_id)
+            dlq.flush()
 
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
