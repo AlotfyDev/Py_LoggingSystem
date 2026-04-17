@@ -51,6 +51,9 @@ from ..resolvers.dispatcher_resolver_pipeline import DispatcherResolverPipeline
 from ..resolvers.readonly_resolver_pipeline import ReadOnlyResolverPipeline
 from ..resolvers.writer_resolver_pipeline import WriterResolverPipeline
 
+# Metrics integration
+from ..observability.metrics.registry import MetricRegistry
+
 ALLOWED_THREAD_SAFETY_MODES = {
     "single_writer_per_partition",
     "thread_safe_locked",
@@ -121,6 +124,7 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
     _preview_integration_adapter: PreviewerIntegrationPort | None = None
     _configurator_service: ConfiguratorService = field(init=False)
     _production_profile_service: ProductionProfileCatalogService = field(init=False)
+    _metrics_registry: MetricRegistry = field(default_factory=MetricRegistry.get_instance)
 
     def __post_init__(self) -> None:
         default_catalog = build_default_content_schema_catalog()
@@ -157,6 +161,11 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
                 if default_profile_id in self._production_profiles:
                     self._active_production_profile_id = default_profile_id
         self._configurator_service = ConfiguratorService(self)
+
+    def _initialize_metrics(self) -> None:
+        """Initialize metrics for logging service observability."""
+        # These metrics will be created lazily on first use
+        pass
 
     def register_schema(self, schema_id: str, schema_payload: Mapping[str, Any]) -> None:
         key = self._validate_identifier(schema_id, "schema_id")
@@ -872,6 +881,9 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
         return self._adapter_registry.list_keys()
 
     def dispatch_round(self, round_id: str) -> None:
+        import time
+        start_time = time.time()
+
         current_round_id = self._validate_identifier(round_id, "round_id")
         self._ensure_dispatch_assignment_or_fail()
         batch, dropped_count = self._drain_pending_for_dispatch()
@@ -915,6 +927,16 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             self._log_container_module.requeue_pending_front(batch)
             with self._lock:
                 self._dispatch_failures += 1
+
+            # Record dispatch error metrics
+            self._metrics_registry.counter(
+                name="logs_dispatch_errors_total",
+                description="Total number of dispatch failures",
+                unit="errors",
+                labels={"service": "logging_service", "adapter": active_adapter_key},
+                initial_value=1
+            )
+
             raise RuntimeError(f"dispatch_round failed for adapter {active_adapter_key}") from exc
 
         dispatched_batch: list[LogRecord] = []
@@ -937,6 +959,35 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             self._listener_failures += listener_failures
             self._last_round_id = current_round_id
             self._persist_state_locked()
+
+        # Record dispatch metrics
+        self._metrics_registry.counter(
+            name="logs_dispatched_total",
+            description="Total number of logs successfully dispatched",
+            unit="logs",
+            labels={"service": "logging_service"},
+            initial_value=len(dispatched_batch)
+        )
+
+        # Update queue depth gauge
+        current_queue_depth = self._log_container_module.pending_count()
+        self._metrics_registry.gauge_set(
+            name="queue_depth",
+            value=current_queue_depth,
+            description="Current number of logs pending dispatch",
+            unit="logs",
+            labels={"service": "logging_service"}
+        )
+
+        # Record dispatch latency histogram
+        dispatch_duration = time.time() - start_time
+        self._metrics_registry.histogram_observe(
+            name="dispatch_latency_seconds",
+            value=dispatch_duration,
+            description="Time taken to dispatch a batch of logs",
+            unit="seconds",
+            labels={"service": "logging_service", "adapter": active_adapter_key}
+        )
 
     def enforce_safepoint(self, safepoint_id: str) -> None:
         current_safepoint_id = self._validate_identifier(safepoint_id, "safepoint_id")
@@ -1004,6 +1055,16 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
         with self._lock:
             self._total_emitted += 1
             self._persist_state_locked()
+
+        # Record metrics
+        self._metrics_registry.counter(
+            name="logs_emitted_total",
+            description="Total number of logs emitted",
+            unit="logs",
+            labels={"service": "logging_service"},
+            initial_value=1
+        )
+
         return record_id
 
     def emit(self, payload: Mapping[str, Any], context: Mapping[str, Any] | None = None) -> str:
