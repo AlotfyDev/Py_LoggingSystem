@@ -3,6 +3,7 @@ Health checking package for Py_LoggingSystem.
 Provides health status types, interfaces, and implementations.
 """
 
+from .base import BaseHealthCheck
 from .interfaces import IHealthCheck, CompositeHealthCheck
 from .types import EHealthStatus, HealthCheckResult, HealthReport
 
@@ -12,4 +13,5 @@ __all__ = [
     "HealthReport",
     "IHealthCheck",
     "CompositeHealthCheck",
+    "BaseHealthCheck",
 ]
