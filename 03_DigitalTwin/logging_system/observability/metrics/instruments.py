@@ -129,3 +129,137 @@ class Counter:
     def unit(self) -> Optional[str]:
         """Get the metric unit."""
         return self._unit
+
+
+class Gauge:
+    """
+    Gauge instrument for recording point-in-time measurements.
+
+    Gauges represent values that can go up or down, typically used for
+    current measurements such as memory usage, queue size, temperature,
+    or any instantaneous value.
+
+    This instrument provides a convenient API while internally using
+    the metric registry for storage and thread safety.
+    """
+
+    def __init__(self,
+                 name: str,
+                 description: str = "",
+                 unit: Optional[str] = None,
+                 labels: Optional[Dict[str, str]] = None,
+                 initial_value: float = 0.0):
+        """
+        Initialize a gauge instrument.
+
+        Args:
+            name: Metric name (must be unique)
+            description: Human-readable description
+            unit: Unit of measurement (e.g., "bytes", "celsius", "percent")
+            labels: Default labels to apply to all measurements
+            initial_value: Initial gauge value
+        """
+        self._name = name
+        self._description = description
+        self._unit = unit
+        self._default_labels = labels or {}
+        self._registry = MetricRegistry.get_instance()
+
+        # Set initial value
+        self.set(initial_value)
+
+    def set(self, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Set the gauge to a specific value.
+
+        Args:
+            value: The value to set
+            labels: Additional labels to merge with default labels
+        """
+        # Merge default labels with provided labels
+        merged_labels = {**self._default_labels}
+        if labels:
+            merged_labels.update(labels)
+
+        # Use registry to set gauge value
+        self._registry.gauge_set(
+            name=self._name,
+            value=value,
+            description=self._description,
+            unit=self._unit,
+            labels=merged_labels
+        )
+
+    def increment(self, amount: float = 1.0, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Increment the gauge by the specified amount.
+
+        Args:
+            amount: Amount to increment (can be negative to decrement)
+            labels: Additional labels to merge with default labels
+        """
+        # Merge default labels with provided labels
+        merged_labels = {**self._default_labels}
+        if labels:
+            merged_labels.update(labels)
+
+        # Use registry to increment gauge value
+        self._registry.gauge_inc(
+            name=self._name,
+            amount=amount,
+            description=self._description,
+            unit=self._unit,
+            labels=merged_labels
+        )
+
+    def decrement(self, amount: float = 1.0, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Decrement the gauge by the specified amount.
+
+        Args:
+            amount: Amount to decrement
+            labels: Additional labels to merge with default labels
+        """
+        # Decrement is just incrementing by negative amount
+        self.increment(-amount, labels)
+
+    def get_value(self, labels: Optional[Dict[str, str]] = None) -> float:
+        """
+        Get the current value of the gauge.
+
+        Note: This method is primarily for testing. In production,
+        metrics are typically collected via the registry's collect() method.
+
+        Args:
+            labels: Labels to identify the specific gauge instance
+
+        Returns:
+            Current gauge value
+        """
+        merged_labels = {**self._default_labels}
+        if labels:
+            merged_labels.update(labels)
+
+        # Find matching metric in registry
+        for metric in self._registry.collect():
+            if (metric.metadata.name == self._name and
+                metric.metadata.labels == merged_labels and
+                isinstance(metric, type(metric))):  # GaugeValue
+                return metric.value
+
+        return 0.0  # Not found
+
+    @property
+    def name(self) -> str:
+        """Get the metric name."""
+        return self._name
+
+    @property
+    def description(self) -> str:
+        """Get the metric description."""
+        return self._description
+
+    @property
+    def unit(self) -> Optional[str]:
+        """Get the metric unit."""
+        return self._unit
