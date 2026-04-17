@@ -1,4 +1,5 @@
 from .circuit_breaker import (
+    CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerMetrics,
     CircuitBreakerOpenError,
@@ -40,4 +41,5 @@ __all__ = [
     "CircuitBreakerConfig",
     "CircuitBreakerMetrics",
     "CircuitBreakerOpenError",
+    "CircuitBreaker",
 ]
