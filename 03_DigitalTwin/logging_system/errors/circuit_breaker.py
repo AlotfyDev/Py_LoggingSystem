@@ -50,6 +50,34 @@ class CircuitBreakerMetrics:
     consecutive_successes: int = 0
     opened_at: str | None = None
     closed_at: str | None = None
+    half_open_calls_allowed: int = 0
+    half_open_calls_made: int = 0
+
+    @property
+    def failure_rate(self) -> float:
+        if self.total_calls == 0:
+            return 0.0
+        return self.failed_calls / self.total_calls
+
+    @property
+    def success_rate(self) -> float:
+        if self.total_calls == 0:
+            return 0.0
+        return self.successful_calls / self.total_calls
+
+    @property
+    def rejection_rate(self) -> float:
+        total_attempts = self.total_calls + self.rejected_calls
+        if total_attempts == 0:
+            return 0.0
+        return self.rejected_calls / total_attempts
+
+    @property
+    def availability(self) -> float:
+        total = self.successful_calls + self.failed_calls
+        if total == 0:
+            return 1.0
+        return self.successful_calls / total
 
     def to_dict(self) -> dict:
         return {
@@ -64,6 +92,12 @@ class CircuitBreakerMetrics:
             "consecutive_successes": self.consecutive_successes,
             "opened_at": self.opened_at,
             "closed_at": self.closed_at,
+            "half_open_calls_allowed": self.half_open_calls_allowed,
+            "half_open_calls_made": self.half_open_calls_made,
+            "failure_rate": self.failure_rate,
+            "success_rate": self.success_rate,
+            "rejection_rate": self.rejection_rate,
+            "availability": self.availability,
         }
 
 
@@ -120,6 +154,8 @@ class CircuitBreaker:
                 consecutive_successes=self._consecutive_successes,
                 opened_at=self._opened_at.isoformat() if self._opened_at else None,
                 closed_at=self._metrics.closed_at,
+                half_open_calls_allowed=self._metrics.half_open_calls_allowed,
+                half_open_calls_made=self._metrics.half_open_calls_made,
             )
 
     def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
@@ -147,7 +183,10 @@ class CircuitBreaker:
             if self._state == ECircuitState.OPEN:
                 return False
             if self._state == ECircuitState.HALF_OPEN:
-                return self._half_open_calls < self.config.half_open_max_calls
+                allowed = self._half_open_calls < self.config.half_open_max_calls
+                if allowed:
+                    self._metrics.half_open_calls_allowed += 1
+                return allowed
             return True
 
     def _check_state_transition(self) -> None:
@@ -165,6 +204,7 @@ class CircuitBreaker:
 
             if self._state == ECircuitState.HALF_OPEN:
                 self._half_open_calls += 1
+                self._metrics.half_open_calls_made += 1
                 self._consecutive_successes += 1
                 if self._consecutive_successes >= self.config.success_threshold:
                     self._transition_to(ECircuitState.CLOSED)

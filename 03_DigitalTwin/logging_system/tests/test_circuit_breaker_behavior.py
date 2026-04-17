@@ -7,6 +7,7 @@ import unittest
 from logging_system.errors.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
+    CircuitBreakerMetrics,
     CircuitBreakerOpenError,
     ECircuitState,
 )
@@ -299,6 +300,74 @@ class CircuitBreakerMetricsUpdatedTests(unittest.TestCase):
         _ = cb.state
 
         self.assertGreater(cb.metrics.state_transitions, initial_transitions + 1)
+
+
+class CircuitBreakerMetricsRateTests(unittest.TestCase):
+    def test_failure_rate_zero_calls(self) -> None:
+        metrics = CircuitBreakerMetrics()
+        self.assertEqual(metrics.failure_rate, 0.0)
+
+    def test_failure_rate_with_calls(self) -> None:
+        metrics = CircuitBreakerMetrics(total_calls=10, failed_calls=2)
+        self.assertEqual(metrics.failure_rate, 0.2)
+
+    def test_success_rate_zero_calls(self) -> None:
+        metrics = CircuitBreakerMetrics()
+        self.assertEqual(metrics.success_rate, 0.0)
+
+    def test_success_rate_with_calls(self) -> None:
+        metrics = CircuitBreakerMetrics(total_calls=10, successful_calls=8)
+        self.assertEqual(metrics.success_rate, 0.8)
+
+    def test_rejection_rate_zero(self) -> None:
+        metrics = CircuitBreakerMetrics()
+        self.assertEqual(metrics.rejection_rate, 0.0)
+
+    def test_rejection_rate_with_rejections(self) -> None:
+        metrics = CircuitBreakerMetrics(total_calls=10, rejected_calls=5)
+        self.assertEqual(metrics.rejection_rate, 5 / 15)
+
+    def test_availability_full(self) -> None:
+        metrics = CircuitBreakerMetrics(successful_calls=10, failed_calls=0)
+        self.assertEqual(metrics.availability, 1.0)
+
+    def test_availability_partial(self) -> None:
+        metrics = CircuitBreakerMetrics(successful_calls=8, failed_calls=2)
+        self.assertEqual(metrics.availability, 0.8)
+
+    def test_metrics_to_dict_includes_rates(self) -> None:
+        metrics = CircuitBreakerMetrics(total_calls=10, successful_calls=8, failed_calls=2)
+        d = metrics.to_dict()
+        self.assertIn("failure_rate", d)
+        self.assertIn("success_rate", d)
+        self.assertIn("rejection_rate", d)
+        self.assertIn("availability", d)
+        self.assertEqual(d["failure_rate"], 0.2)
+        self.assertEqual(d["success_rate"], 0.8)
+
+
+class CircuitBreakerHalfOpenMetricsTests(unittest.TestCase):
+    def test_half_open_calls_tracked(self) -> None:
+        cb = CircuitBreaker(
+            "test",
+            CircuitBreakerConfig(
+                failure_threshold=1,
+                success_threshold=2,
+                open_timeout_seconds=0.1,
+            ),
+        )
+
+        with self.assertRaises(Exception):
+            cb.call(lambda: (_ for _ in ()).throw(Exception("fail")))
+
+        time.sleep(0.15)
+        _ = cb.state
+
+        cb.call(lambda: "success1")
+        self.assertEqual(cb.metrics.half_open_calls_made, 1)
+
+        cb.call(lambda: "success2")
+        self.assertEqual(cb.metrics.half_open_calls_made, 2)
 
 
 class CircuitBreakerResetTests(unittest.TestCase):
