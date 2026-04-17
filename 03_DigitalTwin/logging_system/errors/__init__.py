@@ -1,3 +1,9 @@
+from .circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitBreakerMetrics,
+    CircuitBreakerOpenError,
+    ECircuitState,
+)
 from .error_hierarchy import (
     EErrorCategory,
     ELogErrorCode,
@@ -30,4 +36,8 @@ __all__ = [
     "is_success",
     "map",
     "or_else",
+    "ECircuitState",
+    "CircuitBreakerConfig",
+    "CircuitBreakerMetrics",
+    "CircuitBreakerOpenError",
 ]
