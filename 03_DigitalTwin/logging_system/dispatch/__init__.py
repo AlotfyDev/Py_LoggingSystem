@@ -1,3 +1,11 @@
-from .dispatcher_with_error_handling import DispatcherWithCircuitBreaker, create_default_dispatcher
+from .dispatcher_with_error_handling import (
+    DispatcherWithCircuitBreaker,
+    DispatcherWithErrorHandling,
+    create_default_dispatcher,
+)
 
-__all__ = ["DispatcherWithCircuitBreaker", "create_default_dispatcher"]
+__all__ = [
+    "DispatcherWithCircuitBreaker",
+    "DispatcherWithErrorHandling",
+    "create_default_dispatcher",
+]
