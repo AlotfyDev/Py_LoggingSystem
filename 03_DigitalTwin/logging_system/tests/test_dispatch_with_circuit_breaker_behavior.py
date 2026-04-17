@@ -13,6 +13,14 @@ from logging_system.errors import (
 )
 
 
+def create_breaker_with_config(dispatcher, adapter_key, config):
+    with dispatcher._lock:
+        dispatcher._circuit_breakers[adapter_key] = CircuitBreaker(
+            name=adapter_key,
+            config=config,
+        )
+
+
 class TestDispatchWithCircuitBreaker:
     def test_dispatch_with_circuit_breaker_success(self):
         dispatcher = DispatcherWithCircuitBreaker()
@@ -31,13 +39,14 @@ class TestDispatchWithCircuitBreaker:
     def test_dispatch_with_circuit_breaker_failure(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=3,
             success_threshold=2,
             open_timeout_seconds=30,
             half_open_max_calls=3,
             sliding_window_size=10,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -54,13 +63,14 @@ class TestDispatchWithCircuitBreaker:
     def test_circuit_open_rejects_dispatch(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=2,
             success_threshold=1,
             open_timeout_seconds=1,
             half_open_max_calls=1,
             sliding_window_size=5,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -85,13 +95,14 @@ class TestDispatchWithCircuitBreaker:
     def test_circuit_half_open_allows_dispatch(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=2,
             success_threshold=1,
             open_timeout_seconds=0.5,
             half_open_max_calls=2,
             sliding_window_size=5,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -138,13 +149,14 @@ class TestDispatchWithCircuitBreaker:
     def test_no_adapter_calls_when_circuit_open(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=3,
             success_threshold=2,
             open_timeout_seconds=30,
             half_open_max_calls=3,
             sliding_window_size=10,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
         call_count = 0
 
         def tracked_task() -> Mapping[str, Any]:
@@ -185,13 +197,14 @@ class TestDispatchWithCircuitBreaker:
     def test_reset_circuit(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=3,
             success_threshold=2,
             open_timeout_seconds=30,
             half_open_max_calls=3,
             sliding_window_size=10,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -209,13 +222,15 @@ class TestDispatchWithCircuitBreaker:
 
     def test_reset_all_circuits(self):
         dispatcher = DispatcherWithCircuitBreaker()
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=3,
             success_threshold=2,
             open_timeout_seconds=30,
             half_open_max_calls=3,
             sliding_window_size=10,
         )
+        create_breaker_with_config(dispatcher, "adapter1", config)
+        create_breaker_with_config(dispatcher, "adapter2", config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -233,13 +248,14 @@ class TestDispatchWithCircuitBreaker:
 class TestCircuitBreakerIntegration:
     def test_circuit_breaker_per_adapter_isolation(self):
         dispatcher = DispatcherWithCircuitBreaker()
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=3,
             success_threshold=2,
             open_timeout_seconds=30,
             half_open_max_calls=3,
             sliding_window_size=10,
         )
+        create_breaker_with_config(dispatcher, "adapter1", config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")
@@ -256,13 +272,14 @@ class TestCircuitBreakerIntegration:
     def test_circuit_breaker_state_transitions(self):
         dispatcher = DispatcherWithCircuitBreaker()
         adapter_key = "telemetry.test"
-        dispatcher._default_config = CircuitBreakerConfig(
+        config = CircuitBreakerConfig(
             failure_threshold=2,
             success_threshold=1,
             open_timeout_seconds=0.3,
             half_open_max_calls=1,
             sliding_window_size=5,
         )
+        create_breaker_with_config(dispatcher, adapter_key, config)
 
         def failing_task() -> Mapping[str, Any]:
             raise RuntimeError("Adapter failure")

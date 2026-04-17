@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from threading import RLock
 from typing import Any
 
 from ..errors import (
+    BackoffCalculator,
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerOpenError,
@@ -13,10 +15,20 @@ from ..errors import (
     DLQEntry,
     EDLQStatus,
     ECircuitState,
+    ERetryStrategy,
     FileBasedDeadLetterQueue,
+    RetryConfig,
 )
 from ..models.record import LogRecord
 from ..models.utc_now_iso import utc_now_iso
+
+
+@dataclass
+class DispatchResult:
+    results: list[Mapping[str, Any]]
+    errors: list[Exception]
+    retries_attempted: int = 0
+    dlq_entries: list[DLQEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -28,7 +40,7 @@ class DispatcherWithErrorHandling:
         )
     )
     _lock: RLock = field(default_factory=RLock)
-    _default_config: CircuitBreakerConfig = field(
+    _default_circuit_config: CircuitBreakerConfig = field(
         default_factory=lambda: CircuitBreakerConfig(
             failure_threshold=5,
             success_threshold=2,
@@ -37,13 +49,33 @@ class DispatcherWithErrorHandling:
             sliding_window_size=10,
         )
     )
+    _default_retry_config: RetryConfig = field(
+        default_factory=lambda: RetryConfig(
+            max_attempts=3,
+            initial_delay_seconds=0.1,
+            max_delay_seconds=5.0,
+            strategy=ERetryStrategy.EXPONENTIAL,
+            retryable_error_codes=("TimeoutError", "ConnectionError", "RuntimeError"),
+        )
+    )
+    _retryable_codes: tuple[str, ...] = field(
+        default_factory=lambda: (
+            "TimeoutError",
+            "ConnectionError",
+            "ConnectionResetError",
+            "BrokenPipeError",
+            "FileNotFoundError",
+            "RuntimeError",
+        )
+    )
+    _retry_metrics: dict[str, int] = field(default_factory=dict)
 
     def get_or_create_circuit_breaker(self, adapter_key: str) -> CircuitBreaker:
         with self._lock:
             if adapter_key not in self._circuit_breakers:
                 self._circuit_breakers[adapter_key] = CircuitBreaker(
                     name=adapter_key,
-                    config=self._default_config,
+                    config=self._default_circuit_config,
                 )
             return self._circuit_breakers[adapter_key]
 
@@ -56,6 +88,116 @@ class DispatcherWithErrorHandling:
     def is_dispatch_allowed(self, adapter_key: str) -> bool:
         breaker = self.get_or_create_circuit_breaker(adapter_key)
         return breaker.is_call_allowed()
+
+    def is_error_retryable(self, error: Exception) -> bool:
+        error_code = type(error).__name__
+        return error_code in self._retryable_codes
+
+    def execute_with_retry(
+        self,
+        adapter_key: str,
+        tasks: list[Callable[[], Mapping[str, Any]]],
+        retry_config: RetryConfig | None = None,
+        record: LogRecord | Mapping[str, Any] | None = None,
+    ) -> DispatchResult:
+        config = retry_config or self._default_retry_config
+        backoff = BackoffCalculator(
+            initial_delay_seconds=config.initial_delay_seconds,
+            max_delay_seconds=config.max_delay_seconds,
+            strategy=config.strategy,
+            jitter_mode=config.jitter_mode,
+        )
+
+        results: list[Mapping[str, Any]] = []
+        errors: list[Exception] = []
+        dlq_entries: list[DLQEntry] = []
+        total_retries = 0
+
+        for task in tasks:
+            success, error, retry_count = self._execute_single_with_retry(
+                adapter_key=adapter_key,
+                task=task,
+                config=config,
+                backoff=backoff,
+            )
+            total_retries += retry_count
+
+            if success:
+                results.append(success)
+            else:
+                errors.append(error)
+                if error is not None and record is not None:
+                    entry = self.enqueue_to_dlq(
+                        record=record,
+                        error=error,
+                        adapter_key=adapter_key,
+                        context={"retry_count": retry_count},
+                    )
+                    dlq_entries.append(entry)
+
+        return DispatchResult(
+            results=results,
+            errors=errors,
+            retries_attempted=total_retries,
+            dlq_entries=dlq_entries,
+        )
+
+    def _execute_single_with_retry(
+        self,
+        adapter_key: str,
+        task: Callable[[], Mapping[str, Any]],
+        config: RetryConfig,
+        backoff: BackoffCalculator,
+    ) -> tuple[Mapping[str, Any] | None, Exception | None, int]:
+        breaker = self.get_or_create_circuit_breaker(adapter_key)
+        retry_count = 0
+        last_error: Exception | None = None
+
+        for attempt in range(1, config.max_attempts + 1):
+            try:
+                if not breaker.is_call_allowed():
+                    last_error = CircuitBreakerOpenError(
+                        circuit_name=adapter_key,
+                        state=breaker.state,
+                        message=f"Circuit breaker is OPEN for adapter {adapter_key}",
+                    )
+                    break
+
+                result = breaker.call(task)
+                if retry_count > 0:
+                    self._record_retry_metric(adapter_key)
+                return result, None, retry_count
+
+            except CircuitBreakerOpenError as exc:
+                last_error = exc
+                break
+
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+
+                if not self.is_error_retryable(exc):
+                    break
+
+                retry_count += 1
+
+                if attempt < config.max_attempts:
+                    delay = backoff.calculate_delay(attempt)
+                    if delay > 0:
+                        time.sleep(delay)
+
+        return None, last_error, retry_count
+
+    def _record_retry_metric(self, adapter_key: str) -> None:
+        with self._lock:
+            if adapter_key not in self._retry_metrics:
+                self._retry_metrics[adapter_key] = 0
+            self._retry_metrics[adapter_key] += 1
+
+    def get_retry_metrics(self, adapter_key: str | None = None) -> dict[str, int]:
+        with self._lock:
+            if adapter_key:
+                return {adapter_key: self._retry_metrics.get(adapter_key, 0)}
+            return dict(self._retry_metrics)
 
     def execute_with_circuit_breaker(
         self,
@@ -106,6 +248,7 @@ class DispatcherWithErrorHandling:
             "error_type": type(error).__name__,
             "error_message": str(error),
             "timestamp": utc_now_iso(),
+            "is_retryable": self.is_error_retryable(error),
         }
         if context:
             metadata["context"] = dict(context)
@@ -228,6 +371,7 @@ class DispatcherWithErrorHandling:
             "dlq_statistics": self.get_dlq_statistics(),
             "dlq_failed_count": len(self.get_failed_entries()),
             "dlq_pending_count": len(self.get_pending_entries()),
+            "retry_metrics": self.get_retry_metrics(),
         }
 
 
