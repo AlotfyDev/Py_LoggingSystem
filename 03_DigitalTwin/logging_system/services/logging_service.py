@@ -54,6 +54,10 @@ from ..resolvers.writer_resolver_pipeline import WriterResolverPipeline
 # Metrics integration
 from ..observability.metrics.registry import MetricRegistry
 
+# Tracing integration
+from ..observability.tracing.context import TracingContext
+from ..observability.tracing.types import ESpanKind
+
 ALLOWED_THREAD_SAFETY_MODES = {
     "single_writer_per_partition",
     "thread_safe_locked",
@@ -125,6 +129,7 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
     _configurator_service: ConfiguratorService = field(init=False)
     _production_profile_service: ProductionProfileCatalogService = field(init=False)
     _metrics_registry: MetricRegistry = field(default_factory=MetricRegistry.get_instance)
+    _tracing_context: TracingContext = field(default_factory=TracingContext)
 
     def __post_init__(self) -> None:
         default_catalog = build_default_content_schema_catalog()
@@ -1070,6 +1075,48 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
     def emit(self, payload: Mapping[str, Any], context: Mapping[str, Any] | None = None) -> str:
         return self.submit_signal_or_request(payload=payload, context=context)
 
+    def traced_emit(self, payload: Mapping[str, Any], context: Mapping[str, Any] | None = None) -> str:
+        """
+        Emit a log entry with automatic tracing.
+
+        This method wraps the emit operation in a span, providing distributed tracing
+        capabilities for logging operations.
+
+        Args:
+            payload: Log payload with level, message, attributes, context
+            context: Optional additional context
+
+        Returns:
+            Record ID of the emitted log
+        """
+        # Extract span context from HTTP headers if available
+        span_context = None
+        if context and "headers" in context:
+            span_context = self._tracing_context.extract_context(context["headers"])
+
+        # Create a span for the logging operation
+        with self._tracing_context.span(
+            name=f"log.{payload.get('level', 'UNKNOWN').lower()}",
+            kind=ESpanKind.INTERNAL,
+            attributes={
+                "log.level": payload.get("level", "UNKNOWN"),
+                "log.message": payload.get("message", "")[:100],  # Truncate long messages
+            },
+            parent_context=span_context
+        ) as span:
+            # Inject current span context into outgoing headers if present
+            if context and "headers" in context:
+                outgoing_headers = self._tracing_context.inject_context()
+                context["headers"].update(outgoing_headers)
+
+            # Perform the actual emit operation
+            record_id = self.emit(payload, context)
+
+            # Add additional span attributes
+            span.add_attribute("log.record_id", record_id)
+
+            return record_id
+
     def query_projection(
         self,
         *,
@@ -1107,6 +1154,38 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             evidence["runtime_profiles"] = sorted(self._runtime_profiles.keys())
             evidence["production_profiles"] = sorted(self._production_profiles.keys())
         return evidence
+
+    def get_metrics_prometheus(self) -> str:
+        """
+        Get all metrics in Prometheus text format.
+
+        Returns:
+            String containing all metrics in Prometheus exposition format
+        """
+        from ..observability.metrics.exporters.prometheus import PrometheusExporter
+        exporter = PrometheusExporter(self._metrics_registry)
+        return exporter.export()
+
+    def get_tracing_info(self) -> Mapping[str, Any]:
+        """
+        Get current tracing information.
+
+        Returns:
+            Dictionary containing current span information and tracing status
+        """
+        current_span = self._tracing_context.current_span
+        return {
+            "tracing_enabled": self._tracing_context._config.enabled,
+            "current_span": {
+                "active": current_span is not None,
+                "name": current_span.name if current_span else None,
+                "trace_id": current_span.context.trace_id if current_span else None,
+                "span_id": current_span.context.span_id if current_span else None,
+                "kind": current_span.kind.value if current_span else None,
+            } if current_span else None,
+            "sampling_rate": self._tracing_context._config.sampling_rate,
+            "service_name": self._tracing_context._config.service_name,
+        }
 
     def log(
         self,
