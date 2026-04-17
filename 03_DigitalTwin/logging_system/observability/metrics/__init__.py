@@ -5,6 +5,14 @@ This module provides metric collection, storage, and export capabilities
 following OpenTelemetry and Prometheus patterns.
 """
 
+from .registry import (
+    MetricRegistry,
+    counter,
+    gauge_set,
+    gauge_inc,
+    histogram_observe,
+    collect,
+)
 from .types import (
     EMetricType,
     MetricMetadata,
