@@ -5,6 +5,7 @@ Provides health status types, interfaces, and implementations.
 
 from .base import BaseHealthCheck
 from .checks import AdapterHealthCheck, ContainerHealthCheck, DLQHealthCheck
+from .endpoint import HealthEndpoint
 from .interfaces import IHealthCheck, CompositeHealthCheck
 from .types import EHealthStatus, HealthCheckResult, HealthReport
 
@@ -18,4 +19,5 @@ __all__ = [
     "AdapterHealthCheck",
     "ContainerHealthCheck",
     "DLQHealthCheck",
+    "HealthEndpoint",
 ]
