@@ -144,6 +144,7 @@ Next Tasks:
 | 2026-04-17 | OBS-MET-006 | Prometheus Exporter | PrometheusExporter class with export() method, TYPE/HELP annotations, histogram bucket format (7 tests) |
 | 2026-04-17 | OBS-MET-007 | Metrics to Logging Service | Integrated logs_emitted_total, logs_dispatched_total, logs_dispatch_errors_total, queue_depth gauge, dispatch_latency_seconds histogram (8 tests) |
 | 2026-04-17 | OBS-MET-008 | Prometheus Exporter to Logging Service | get_metrics_prometheus() method with PrometheusExporter integration (7 tests) |
+| 2026-04-17 | OBS-TRC-001 | Define Trace Context Types | ESpanKind, ESpanStatus, SpanContext, Span, TraceConfig dataclasses (29 tests) |
 | 2026-04-17 | DOCS | MicroTaskBreakdownPlan | Created for all 5 areas (96 tasks total) |
 
 ---
