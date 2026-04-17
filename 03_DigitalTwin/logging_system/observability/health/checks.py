@@ -303,3 +303,158 @@ class ContainerHealthCheck(BaseHealthCheck):
                 'max_capacity': max_capacity,
                 'utilization': utilization
             }
+
+
+class DLQHealthCheck(BaseHealthCheck):
+    """
+    Health check for Dead Letter Queue (DLQ).
+
+    This health check monitors DLQ statistics to ensure the system is not
+    accumulating too many failed messages, which could indicate systemic issues.
+    DLQ health checks are not critical since DLQ is a safety mechanism.
+    """
+
+    def __init__(self,
+                 dlq,
+                 name: str = "dlq_health",
+                 is_critical: bool = False,  # DLQ is not critical - it's a safety mechanism
+                 failed_threshold: int = 100,
+                 pending_threshold: int = 1000):
+        """
+        Initialize the DLQ health check.
+
+        Args:
+            dlq: The dead letter queue to monitor
+            name: Name for this health check (default: "dlq_health")
+            is_critical: Whether this check is critical (default: False for DLQ)
+            failed_threshold: Failed messages threshold for UNHEALTHY status (default: 100)
+            pending_threshold: Pending messages threshold for DEGRADED status (default: 1000)
+        """
+        super().__init__(name, is_critical)
+        self._dlq = dlq
+        self._failed_threshold = failed_threshold
+        self._pending_threshold = pending_threshold
+
+    def _perform_health_check(self) -> tuple[EHealthStatus, str, Dict[str, Any] | None]:
+        """
+        Perform the DLQ health check.
+
+        Monitors DLQ statistics for failed and pending message accumulation.
+
+        Returns:
+            tuple: (status, message, details)
+                - status: EHealthStatus indicating DLQ health
+                - message: Human-readable status message
+                - details: Dictionary with DLQ statistics
+        """
+        try:
+            # Get DLQ statistics
+            stats = self._get_dlq_statistics()
+
+            total_entries = stats.get('total_entries', 0)
+            failed_count = stats.get('failed_count', 0)
+            pending_count = stats.get('pending_count', 0)
+
+            # Determine status based on thresholds
+            if failed_count > self._failed_threshold:
+                status = EHealthStatus.UNHEALTHY
+                message = f"DLQ has excessive failed messages: {failed_count} (threshold: {self._failed_threshold})"
+            elif pending_count > self._pending_threshold:
+                status = EHealthStatus.DEGRADED
+                message = f"DLQ has high pending messages: {pending_count} (threshold: {self._pending_threshold})"
+            else:
+                status = EHealthStatus.HEALTHY
+                message = f"DLQ healthy: {total_entries} total entries ({pending_count} pending, {failed_count} failed)"
+
+            # Add threshold information
+            details = dict(stats)
+            details.update({
+                "failed_threshold": self._failed_threshold,
+                "pending_threshold": self._pending_threshold,
+                "dlq_status": "critical" if failed_count > self._failed_threshold
+                            else "warning" if pending_count > self._pending_threshold
+                            else "normal"
+            })
+
+            return status, message, details
+
+        except Exception as exc:
+            return (
+                EHealthStatus.UNHEALTHY,
+                f"Failed to check DLQ health: {str(exc)}",
+                {
+                    "error": str(exc),
+                    "error_type": type(exc).__name__,
+                    "total_entries": 0,
+                    "failed_count": 0,
+                    "pending_count": 0,
+                    "failed_threshold": self._failed_threshold,
+                    "pending_threshold": self._pending_threshold
+                }
+            )
+
+    def _get_dlq_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics from the DLQ.
+
+        Returns:
+            Dict[str, Any]: DLQ statistics including entry counts and status
+
+        Raises:
+            Exception: If DLQ statistics cannot be retrieved
+        """
+        # Try different DLQ interfaces in order of preference
+        if hasattr(self._dlq, 'get_statistics'):
+            try:
+                return self._dlq.get_statistics()
+            except AttributeError:
+                # Method exists but raised AttributeError, try alternatives
+                pass
+
+        if hasattr(self._dlq, 'stats'):
+            try:
+                return self._dlq.stats()
+            except Exception:
+                # Method exists but failed, continue to fallback
+                pass
+
+        # Fallback: try to get basic information
+        total_entries = 0
+        failed_count = 0
+        pending_count = 0
+
+        # Try to access entries if available
+        if hasattr(self._dlq, '__len__'):
+            try:
+                total_entries = len(self._dlq)
+                # Ensure we have an integer
+                if not isinstance(total_entries, int):
+                    total_entries = 0
+            except Exception:
+                total_entries = 0
+        else:
+            total_entries = 0
+
+        # Try to count by status if possible - avoid circular imports
+        if hasattr(self._dlq, 'get_by_status'):
+            try:
+                # Try common status values without importing
+                failed_entries = self._dlq.get_by_status('FAILED')
+                pending_entries = self._dlq.get_by_status('PENDING')
+
+                failed_count = len(failed_entries) if hasattr(failed_entries, '__len__') else 0
+                pending_count = len(pending_entries) if hasattr(pending_entries, '__len__') else 0
+            except Exception:
+                # If we can't get detailed counts, use basic estimation
+                failed_count = 0
+                pending_count = total_entries if isinstance(total_entries, int) else 0
+        else:
+            # No get_by_status method, estimate
+            failed_count = 0
+            pending_count = total_entries if isinstance(total_entries, int) else 0
+
+        return {
+            'total_entries': total_entries,
+            'failed_count': failed_count,
+            'pending_count': pending_count
+        }
