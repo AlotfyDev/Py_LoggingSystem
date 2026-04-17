@@ -5,6 +5,11 @@ from .circuit_breaker import (
     CircuitBreakerOpenError,
     ECircuitState,
 )
+from .circuit_breaker_registry import (
+    CircuitBreakerRegistry,
+    get_registry,
+    set_registry,
+)
 from .error_hierarchy import (
     EErrorCategory,
     ELogErrorCode,
@@ -42,4 +47,7 @@ __all__ = [
     "CircuitBreakerMetrics",
     "CircuitBreakerOpenError",
     "CircuitBreaker",
+    "CircuitBreakerRegistry",
+    "get_registry",
+    "set_registry",
 ]
