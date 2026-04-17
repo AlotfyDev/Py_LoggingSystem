@@ -4,7 +4,7 @@ Provides health status types, interfaces, and implementations.
 """
 
 from .base import BaseHealthCheck
-from .checks import AdapterHealthCheck
+from .checks import AdapterHealthCheck, ContainerHealthCheck
 from .interfaces import IHealthCheck, CompositeHealthCheck
 from .types import EHealthStatus, HealthCheckResult, HealthReport
 
@@ -16,4 +16,5 @@ __all__ = [
     "CompositeHealthCheck",
     "BaseHealthCheck",
     "AdapterHealthCheck",
+    "ContainerHealthCheck",
 ]

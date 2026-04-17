@@ -168,3 +168,138 @@ class AdapterHealthCheck(BaseHealthCheck):
         except Exception:
             # If we can't determine adapter status, consider it unavailable
             return False
+
+
+class ContainerHealthCheck(BaseHealthCheck):
+    """
+    Health check for logging system containers and queues.
+
+    This health check monitors queue depth and capacity to ensure the logging
+    system can handle the current load without overflowing or becoming unresponsive.
+    """
+
+    def __init__(self,
+                 container,
+                 name: str = "container_health",
+                 is_critical: bool = True,
+                 degraded_threshold: float = 0.8,
+                 unhealthy_threshold: float = 0.95):
+        """
+        Initialize the container health check.
+
+        Args:
+            container: The container/queue to monitor
+            name: Name for this health check (default: "container_health")
+            is_critical: Whether this check is critical (default: True)
+            degraded_threshold: Queue utilization threshold for DEGRADED status (default: 0.8)
+            unhealthy_threshold: Queue utilization threshold for UNHEALTHY status (default: 0.95)
+        """
+        super().__init__(name, is_critical)
+        self._container = container
+        self._degraded_threshold = degraded_threshold
+        self._unhealthy_threshold = unhealthy_threshold
+
+    def _perform_health_check(self) -> tuple[EHealthStatus, str, Dict[str, Any] | None]:
+        """
+        Perform the container health check.
+
+        Monitors queue depth, capacity, and utilization to assess container health.
+
+        Returns:
+            tuple: (status, message, details)
+                - status: EHealthStatus indicating container health
+                - message: Human-readable status message
+                - details: Dictionary with container metrics
+        """
+        try:
+            # Get container metrics
+            metrics = self._get_container_metrics()
+
+            current_size = metrics.get('current_size', 0)
+            max_capacity = metrics.get('max_capacity', 0)
+            utilization = metrics.get('utilization', 0.0)
+
+            # Determine status based on utilization thresholds
+            if utilization >= self._unhealthy_threshold:
+                status = EHealthStatus.UNHEALTHY
+                message = f"Container critically full: {utilization:.1%} utilization ({current_size}/{max_capacity})"
+            elif utilization >= self._degraded_threshold:
+                status = EHealthStatus.DEGRADED
+                message = f"Container approaching capacity: {utilization:.1%} utilization ({current_size}/{max_capacity})"
+            else:
+                status = EHealthStatus.HEALTHY
+                message = f"Container healthy: {utilization:.1%} utilization ({current_size}/{max_capacity})"
+
+            # Add threshold information
+            details = dict(metrics)
+            details.update({
+                "degraded_threshold": self._degraded_threshold,
+                "unhealthy_threshold": self._unhealthy_threshold,
+                "utilization_percent": utilization * 100,
+                "available_capacity": max_capacity - current_size,
+                "capacity_status": "critical" if utilization >= self._unhealthy_threshold
+                               else "warning" if utilization >= self._degraded_threshold
+                               else "normal"
+            })
+
+            return status, message, details
+
+        except Exception as exc:
+            return (
+                EHealthStatus.UNHEALTHY,
+                f"Failed to check container health: {str(exc)}",
+                {
+                    "error": str(exc),
+                    "error_type": type(exc).__name__,
+                    "current_size": 0,
+                    "max_capacity": 0,
+                    "utilization": 0.0,
+                    "utilization_percent": 0.0,
+                    "available_capacity": 0
+                }
+            )
+
+    def _get_container_metrics(self) -> Dict[str, Any]:
+        """
+        Get metrics from the container.
+
+        Returns:
+            Dict[str, Any]: Container metrics including size, capacity, and utilization
+
+        Raises:
+            Exception: If container metrics cannot be retrieved
+        """
+        # Try different container interfaces
+        if hasattr(self._container, 'get_metrics'):
+            return self._container.get_metrics()
+        elif hasattr(self._container, 'size') and hasattr(self._container, 'maxlen'):
+            # Collections.deque style container
+            current_size = self._container.size() if callable(getattr(self._container, 'size')) else len(self._container)
+            max_capacity = self._container.maxlen or float('inf')
+            utilization = current_size / max_capacity if max_capacity != float('inf') else 0.0
+            return {
+                'current_size': current_size,
+                'max_capacity': max_capacity,
+                'utilization': utilization
+            }
+        elif hasattr(self._container, '__len__') and hasattr(self._container, 'maxlen'):
+            # Another deque-like interface
+            current_size = len(self._container)
+            max_capacity = self._container.maxlen or float('inf')
+            utilization = current_size / max_capacity if max_capacity != float('inf') else 0.0
+            return {
+                'current_size': current_size,
+                'max_capacity': max_capacity,
+                'utilization': utilization
+            }
+        else:
+            # Fallback: assume basic container with __len__
+            current_size = len(self._container) if hasattr(self._container, '__len__') else 0
+            # Assume unlimited capacity if no maxlen
+            max_capacity = float('inf')
+            utilization = 0.0
+            return {
+                'current_size': current_size,
+                'max_capacity': max_capacity,
+                'utilization': utilization
+            }
