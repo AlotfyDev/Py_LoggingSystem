@@ -19,6 +19,18 @@ class CircuitBreakerConfig:
     half_open_max_calls: int = 3
     sliding_window_size: int = 10
 
+    def __post_init__(self) -> None:
+        if self.failure_threshold <= 0:
+            raise ValueError("failure_threshold must be > 0")
+        if self.success_threshold <= 0:
+            raise ValueError("success_threshold must be > 0")
+        if self.open_timeout_seconds <= 0:
+            raise ValueError("open_timeout_seconds must be > 0")
+        if self.half_open_max_calls <= 0:
+            raise ValueError("half_open_max_calls must be > 0")
+        if self.sliding_window_size <= 0:
+            raise ValueError("sliding_window_size must be > 0")
+
 
 @dataclass
 class CircuitBreakerMetrics:

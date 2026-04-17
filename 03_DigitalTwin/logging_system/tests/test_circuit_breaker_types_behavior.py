@@ -54,6 +54,36 @@ class CircuitBreakerConfigTests(unittest.TestCase):
         with self.assertRaises(AttributeError):
             config.failure_threshold = 10  # type: ignore[attr-defined]
 
+    def test_failure_threshold_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(failure_threshold=0)
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(failure_threshold=-1)
+
+    def test_success_threshold_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(success_threshold=0)
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(success_threshold=-1)
+
+    def test_open_timeout_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(open_timeout_seconds=0.0)
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(open_timeout_seconds=-1.0)
+
+    def test_half_open_max_calls_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(half_open_max_calls=0)
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(half_open_max_calls=-1)
+
+    def test_sliding_window_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(sliding_window_size=0)
+        with self.assertRaises(ValueError):
+            CircuitBreakerConfig(sliding_window_size=-1)
+
 
 class CircuitBreakerMetricsTests(unittest.TestCase):
     def test_default_values(self) -> None:
