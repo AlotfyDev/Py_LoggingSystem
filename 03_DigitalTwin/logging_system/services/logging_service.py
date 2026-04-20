@@ -51,6 +51,13 @@ from ..resolvers.dispatcher_resolver_pipeline import DispatcherResolverPipeline
 from ..resolvers.readonly_resolver_pipeline import ReadOnlyResolverPipeline
 from ..resolvers.writer_resolver_pipeline import WriterResolverPipeline
 
+# Metrics integration
+from ..observability.metrics.registry import MetricRegistry
+
+# Tracing integration
+from ..observability.tracing.context import TracingContext
+from ..observability.tracing.types import ESpanKind
+
 ALLOWED_THREAD_SAFETY_MODES = {
     "single_writer_per_partition",
     "thread_safe_locked",
@@ -121,6 +128,8 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
     _preview_integration_adapter: PreviewerIntegrationPort | None = None
     _configurator_service: ConfiguratorService = field(init=False)
     _production_profile_service: ProductionProfileCatalogService = field(init=False)
+    _metrics_registry: MetricRegistry = field(default_factory=MetricRegistry.get_instance)
+    _tracing_context: TracingContext = field(default_factory=TracingContext)
 
     def __post_init__(self) -> None:
         default_catalog = build_default_content_schema_catalog()
@@ -157,6 +166,11 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
                 if default_profile_id in self._production_profiles:
                     self._active_production_profile_id = default_profile_id
         self._configurator_service = ConfiguratorService(self)
+
+    def _initialize_metrics(self) -> None:
+        """Initialize metrics for logging service observability."""
+        # These metrics will be created lazily on first use
+        pass
 
     def register_schema(self, schema_id: str, schema_payload: Mapping[str, Any]) -> None:
         key = self._validate_identifier(schema_id, "schema_id")
@@ -872,6 +886,9 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
         return self._adapter_registry.list_keys()
 
     def dispatch_round(self, round_id: str) -> None:
+        import time
+        start_time = time.time()
+
         current_round_id = self._validate_identifier(round_id, "round_id")
         self._ensure_dispatch_assignment_or_fail()
         batch, dropped_count = self._drain_pending_for_dispatch()
@@ -915,6 +932,16 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             self._log_container_module.requeue_pending_front(batch)
             with self._lock:
                 self._dispatch_failures += 1
+
+            # Record dispatch error metrics
+            self._metrics_registry.counter(
+                name="logs_dispatch_errors_total",
+                description="Total number of dispatch failures",
+                unit="errors",
+                labels={"service": "logging_service", "adapter": active_adapter_key},
+                initial_value=1
+            )
+
             raise RuntimeError(f"dispatch_round failed for adapter {active_adapter_key}") from exc
 
         dispatched_batch: list[LogRecord] = []
@@ -937,6 +964,35 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             self._listener_failures += listener_failures
             self._last_round_id = current_round_id
             self._persist_state_locked()
+
+        # Record dispatch metrics
+        self._metrics_registry.counter(
+            name="logs_dispatched_total",
+            description="Total number of logs successfully dispatched",
+            unit="logs",
+            labels={"service": "logging_service"},
+            initial_value=len(dispatched_batch)
+        )
+
+        # Update queue depth gauge
+        current_queue_depth = self._log_container_module.pending_count()
+        self._metrics_registry.gauge_set(
+            name="queue_depth",
+            value=current_queue_depth,
+            description="Current number of logs pending dispatch",
+            unit="logs",
+            labels={"service": "logging_service"}
+        )
+
+        # Record dispatch latency histogram
+        dispatch_duration = time.time() - start_time
+        self._metrics_registry.histogram_observe(
+            name="dispatch_latency_seconds",
+            value=dispatch_duration,
+            description="Time taken to dispatch a batch of logs",
+            unit="seconds",
+            labels={"service": "logging_service", "adapter": active_adapter_key}
+        )
 
     def enforce_safepoint(self, safepoint_id: str) -> None:
         current_safepoint_id = self._validate_identifier(safepoint_id, "safepoint_id")
@@ -1004,10 +1060,62 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
         with self._lock:
             self._total_emitted += 1
             self._persist_state_locked()
+
+        # Record metrics
+        self._metrics_registry.counter(
+            name="logs_emitted_total",
+            description="Total number of logs emitted",
+            unit="logs",
+            labels={"service": "logging_service"},
+            initial_value=1
+        )
+
         return record_id
 
     def emit(self, payload: Mapping[str, Any], context: Mapping[str, Any] | None = None) -> str:
         return self.submit_signal_or_request(payload=payload, context=context)
+
+    def traced_emit(self, payload: Mapping[str, Any], context: Mapping[str, Any] | None = None) -> str:
+        """
+        Emit a log entry with automatic tracing.
+
+        This method wraps the emit operation in a span, providing distributed tracing
+        capabilities for logging operations.
+
+        Args:
+            payload: Log payload with level, message, attributes, context
+            context: Optional additional context
+
+        Returns:
+            Record ID of the emitted log
+        """
+        # Extract span context from HTTP headers if available
+        span_context = None
+        if context and "headers" in context:
+            span_context = self._tracing_context.extract_context(context["headers"])
+
+        # Create a span for the logging operation
+        with self._tracing_context.span(
+            name=f"log.{payload.get('level', 'UNKNOWN').lower()}",
+            kind=ESpanKind.INTERNAL,
+            attributes={
+                "log.level": payload.get("level", "UNKNOWN"),
+                "log.message": payload.get("message", "")[:100],  # Truncate long messages
+            },
+            parent_context=span_context
+        ) as span:
+            # Inject current span context into outgoing headers if present
+            if context and "headers" in context:
+                outgoing_headers = self._tracing_context.inject_context()
+                context["headers"].update(outgoing_headers)
+
+            # Perform the actual emit operation
+            record_id = self.emit(payload, context)
+
+            # Add additional span attributes
+            span.add_attribute("log.record_id", record_id)
+
+            return record_id
 
     def query_projection(
         self,
@@ -1046,6 +1154,38 @@ class LoggingService(AdministrativePort, ManagerialPort, ConsumingPort):
             evidence["runtime_profiles"] = sorted(self._runtime_profiles.keys())
             evidence["production_profiles"] = sorted(self._production_profiles.keys())
         return evidence
+
+    def get_metrics_prometheus(self) -> str:
+        """
+        Get all metrics in Prometheus text format.
+
+        Returns:
+            String containing all metrics in Prometheus exposition format
+        """
+        from ..observability.metrics.exporters.prometheus import PrometheusExporter
+        exporter = PrometheusExporter(self._metrics_registry)
+        return exporter.export()
+
+    def get_tracing_info(self) -> Mapping[str, Any]:
+        """
+        Get current tracing information.
+
+        Returns:
+            Dictionary containing current span information and tracing status
+        """
+        current_span = self._tracing_context.current_span
+        return {
+            "tracing_enabled": self._tracing_context._config.enabled,
+            "current_span": {
+                "active": current_span is not None,
+                "name": current_span.name if current_span else None,
+                "trace_id": current_span.context.trace_id if current_span else None,
+                "span_id": current_span.context.span_id if current_span else None,
+                "kind": current_span.kind.value if current_span else None,
+            } if current_span else None,
+            "sampling_rate": self._tracing_context._config.sampling_rate,
+            "service_name": self._tracing_context._config.service_name,
+        }
 
     def log(
         self,
